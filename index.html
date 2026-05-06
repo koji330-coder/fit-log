@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>FIT LOG</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a22;
+    --surface2: #22222e;
+    --accent: #ff3d6b;
+    --accent2: #ff8c42;
+    --gold: #ffd166;
+    --text: #f0f0f5;
+    --text-dim: #888899;
+    --border: #2e2e3e;
+    --success: #06d6a0;
+    --radius: 16px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+    max-width: 480px;
+    margin: 0 auto;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -200px; right: -200px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(255,61,107,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* HEADER */
+  .header {
+    padding: 20px 20px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: rgba(15,15,19,0.95);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 4px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .date-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+
+  /* NAV TABS */
+  .nav-tabs {
+    display: flex;
+    padding: 12px 16px;
+    gap: 8px;
+    background: rgba(15,15,19,0.95);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 61px;
+    z-index: 99;
+  }
+
+  .nav-tab {
+    flex: 1;
+    padding: 10px 8px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .nav-tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  /* SCREENS */
+  .screen { display: none; padding: 16px; }
+  .screen.active { display: block; }
+
+  /* SECTION CARDS */
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    margin-top: 8px;
+  }
+
+  /* AREA GRID */
+  .area-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .area-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 14px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+
+  .area-btn:hover, .area-btn.selected {
+    border-color: var(--accent);
+    background: rgba(255,61,107,0.08);
+  }
+
+  .area-btn .area-icon { font-size: 24px; margin-bottom: 8px; display: block; }
+  .area-btn .area-name { font-size: 13px; font-weight: 700; }
+  .area-btn .area-count { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  /* EXERCISE LIST */
+  .exercise-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .exercise-item {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .exercise-item:hover, .exercise-item.selected {
+    border-color: var(--accent);
+    background: rgba(255,61,107,0.08);
+  }
+
+  .exercise-item .ex-name { font-size: 14px; font-weight: 700; }
+  .exercise-item .ex-part { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .exercise-item .ex-arrow { color: var(--text-dim); font-size: 16px; }
+
+  /* SET LOGGER */
+  .set-logger {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .set-logger-title {
+    font-size: 16px;
+    font-weight: 900;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .part-tag {
+    background: rgba(255,61,107,0.2);
+    color: var(--accent);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+  }
+
+  .input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .input-row.triple {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .input-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  .input-field {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    width: 100%;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+
+  .input-field:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .memo-field {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    width: 100%;
+    resize: none;
+    height: 64px;
+    transition: border-color 0.2s;
+  }
+
+  .memo-field:focus { outline: none; border-color: var(--accent2); }
+  .memo-field::placeholder { color: var(--text-dim); }
+
+  /* SETS LIST */
+  .sets-list {
+    margin-bottom: 12px;
+  }
+
+  .set-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .set-num {
+    background: var(--surface2);
+    border-radius: 6px;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+
+  .set-data { flex: 1; font-weight: 700; }
+  .set-pr { color: var(--accent); font-size: 11px; }
+
+  .set-delete {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  /* BUTTONS */
+  .btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 12px;
+    border: none;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 14px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+  }
+
+  .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1.5px solid var(--border);
+  }
+
+  .btn-success {
+    background: linear-gradient(135deg, var(--success), #0aab7c);
+    color: white;
+  }
+
+  .btn-sm {
+    padding: 10px 16px;
+    font-size: 13px;
+    width: auto;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  /* TODAY LOG */
+  .today-log {
+    margin-top: 8px;
+  }
+
+  .log-exercise-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .log-ex-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+
+  .log-ex-name { font-size: 15px; font-weight: 900; }
+  .log-ex-area { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  .log-set-line {
+    font-size: 13px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .log-set-line:last-child { border-bottom: none; }
+
+  .pr-badge {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    font-size: 10px;
+    font-weight: 900;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+  }
+
+  .log-memo {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: rgba(255,140,66,0.08);
+    border-left: 3px solid var(--accent2);
+    border-radius: 0 6px 6px 0;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+  }
+
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state .empty-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+  .empty-state .empty-desc { font-size: 13px; line-height: 1.6; }
+
+  /* AI PRAISE */
+  .ai-praise-card {
+    background: linear-gradient(135deg, rgba(255,61,107,0.1), rgba(255,140,66,0.1));
+    border: 1.5px solid rgba(255,61,107,0.3);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ai-praise-card::before {
+    content: '';
+    position: absolute;
+    top: -50px; right: -50px;
+    width: 150px; height: 150px;
+    background: radial-gradient(circle, rgba(255,61,107,0.15), transparent 70%);
+    pointer-events: none;
+  }
+
+  .ai-praise-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .ai-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .ai-label { font-size: 11px; color: var(--accent); font-weight: 900; letter-spacing: 2px; }
+  .ai-name { font-size: 14px; font-weight: 700; }
+
+  .ai-text {
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text);
+  }
+
+  .ai-loading {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 4px 0;
+  }
+
+  .dot {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+    40% { transform: translateY(-8px); opacity: 1; }
+  }
+
+  /* HISTORY */
+  .history-day {
+    margin-bottom: 20px;
+  }
+
+  .history-date {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .history-date::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .history-ex-row {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+  }
+
+  .history-ex-name { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+
+  .history-sets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .history-set-chip {
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-dim);
+  }
+
+  .history-set-chip.is-pr {
+    background: rgba(255,61,107,0.15);
+    color: var(--accent);
+    border: 1px solid rgba(255,61,107,0.3);
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--success);
+    color: #0a3d2e;
+    padding: 12px 24px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    z-index: 999;
+    transition: transform 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* STEP INDICATOR */
+  .step-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .step-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  .step-dot.done { background: var(--accent); }
+
+  .back-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 0;
+    margin-bottom: 8px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 700;
+  }
+
+  .back-btn:hover { color: var(--text); }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+  }
+
+  .stat-label { font-size: 10px; color: var(--text-dim); font-weight: 700; margin-top: 4px; letter-spacing: 1px; }
+
+  /* CARDIO */
+  .cardio-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  /* Finish button */
+  .finish-btn-wrap {
+    padding: 16px;
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(to top, var(--bg) 80%, transparent);
+  }
+
+  .finish-btn {
+    width: 100%;
+    padding: 18px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, var(--success), #0aab7c);
+    color: white;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px;
+    font-weight: 900;
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: all 0.2s;
+  }
+
+  .finish-btn:active { transform: scale(0.98); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">FIT LOG</div>
+  <div class="date-badge" id="headerDate"></div>
+</div>
+
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="showScreen('record')">📝 記録</button>
+  <button class="nav-tab" onclick="showScreen('today')">今日</button>
+  <button class="nav-tab" onclick="showScreen('history')">📅 履歴</button>
+</div>
+
+<!-- RECORD SCREEN -->
+<div class="screen active" id="screen-record">
+  <!-- Step 1: Area Select -->
+  <div id="step-area">
+    <div class="section-title">AREA SELECT</div>
+    <div class="area-grid" id="areaGrid"></div>
+  </div>
+
+  <!-- Step 2: Exercise Select -->
+  <div id="step-exercise" style="display:none">
+    <button class="back-btn" onclick="goBack('area')">← エリア選択に戻る</button>
+    <div class="section-title" id="stepExTitle">EXERCISE SELECT</div>
+    <div class="exercise-list" id="exerciseList"></div>
+  </div>
+
+  <!-- Step 3: Set Logger -->
+  <div id="step-set" style="display:none">
+    <button class="back-btn" onclick="goBack('exercise')">← 種目選択に戻る</button>
+    <div class="set-logger">
+      <div class="set-logger-title">
+        <span id="loggerExName">種目名</span>
+        <span class="part-tag" id="loggerPartTag"></span>
+      </div>
+
+      <!-- Cardio inputs -->
+      <div id="cardioInputs" style="display:none">
+        <div class="cardio-inputs">
+          <div class="input-group">
+            <div class="input-label">時間(分)</div>
+            <input class="input-field" type="number" id="cardioTime" placeholder="30" inputmode="numeric">
+          </div>
+          <div class="input-group">
+            <div class="input-label">距離(km)</div>
+            <input class="input-field" type="number" id="cardioDist" placeholder="5.0" inputmode="decimal" step="0.1">
+          </div>
+          <div class="input-group">
+            <div class="input-label">レベル</div>
+            <input class="input-field" type="number" id="cardioLevel" placeholder="8" inputmode="numeric">
+          </div>
+        </div>
+      </div>
+
+      <!-- Strength inputs -->
+      <div id="strengthInputs">
+        <div class="input-row">
+          <div class="input-group">
+            <div class="input-label">重量 (kg)</div>
+            <input class="input-field" type="number" id="inputWeight" placeholder="20" inputmode="decimal" step="0.5">
+          </div>
+          <div class="input-group">
+            <div class="input-label">回数 (reps)</div>
+            <input class="input-field" type="number" id="inputReps" placeholder="10" inputmode="numeric">
+          </div>
+        </div>
+      </div>
+
+      <!-- Sets list -->
+      <div class="sets-list" id="setsList"></div>
+
+      <!-- Memo -->
+      <div class="input-group" style="margin-bottom:12px">
+        <div class="input-label">メモ（任意）</div>
+        <textarea class="memo-field" id="inputMemo" placeholder="フォームが崩れた、次は重量下げるなど…"></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary btn-sm" onclick="addSet()" id="addSetBtn">＋ セット追加</button>
+        <button class="btn btn-primary btn-sm" onclick="saveExercise()">この種目を保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TODAY SCREEN -->
+<div class="screen" id="screen-today">
+  <div id="todayContent"></div>
+</div>
+
+<!-- HISTORY SCREEN -->
+<div class="screen" id="screen-history">
+  <div id="historyContent"></div>
+</div>
+
+<!-- Finish Button (shown when there's data) -->
+<div class="finish-btn-wrap" id="finishBtnWrap" style="display:none">
+  <button class="finish-btn" onclick="finishWorkout()">🏁 トレーニング完了！</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// =====================
+// DATA
+// =====================
+const MACHINES = {
+  cardio: {
+    name: '有酸素マシン',
+    icon: '🏃',
+    type: 'cardio',
+    exercises: [
+      { name: 'ランニングマシン', part: '全身' },
+      { name: 'クロストレーナー', part: '全身' },
+      { name: 'アップライトバイク', part: '下半身' },
+      { name: 'クライムミル', part: '全身' },
+      { name: 'リカンベントバイク', part: '下半身' },
+    ]
+  },
+  machine: {
+    name: '筋トレマシン',
+    icon: '🔧',
+    type: 'strength',
+    exercises: [
+      { name: 'ラテラルレイズ', part: '肩' },
+      { name: 'ショルダープレス', part: '肩' },
+      { name: 'リアデルトフライ', part: '肩' },
+      { name: 'チェストプレス', part: '胸' },
+      { name: 'ラットプルダウン', part: '背中' },
+      { name: 'シーテッドロー', part: '背中' },
+      { name: 'ディップ・チンアシスト', part: '背中/胸' },
+      { name: '8スタックマルチステーション', part: '全身' },
+      { name: 'アームカール', part: '腕' },
+      { name: 'アブドミナル', part: '腹' },
+      { name: 'ロータリートルソー', part: '腹' },
+      { name: 'レッグプレス', part: '脚' },
+      { name: 'プローンレッグカール', part: '脚' },
+      { name: 'レッグエクステンション', part: '脚' },
+      { name: 'インナー・アウターサイ', part: '脚' },
+      { name: 'カーフプレス', part: 'ふくらはぎ' },
+    ]
+  },
+  free: {
+    name: 'フリーウエイト',
+    icon: '🏋️',
+    type: 'strength',
+    exercises: [
+      { name: 'パワーラック', part: '全身' },
+      { name: 'ベンチプレス', part: '胸' },
+      { name: 'スミスマシン', part: '全身' },
+      { name: 'アームカールベンチ', part: '腕' },
+      { name: 'アジャスタブルベンチ', part: '全身' },
+      { name: 'ダンベル', part: '全身' },
+      { name: 'EZバー', part: '腕' },
+    ]
+  },
+  plate: {
+    name: 'プレートロード',
+    icon: '⚡',
+    type: 'strength',
+    exercises: [
+      { name: 'ワイドチェスト', part: '胸' },
+      { name: 'インクラインプレス', part: '胸' },
+      { name: 'ショルダープレス(PL)', part: '肩' },
+      { name: '45度レッグプレス', part: '脚' },
+      { name: 'リーダーナブラ', part: '背中' },
+      { name: 'ハイロウ', part: '背中' },
+      { name: 'レベルロウ', part: '背中' },
+      { name: 'ロウイング', part: '背中' },
+      { name: 'ラテラルレイズ/リアデルトイド', part: '肩' },
+      { name: 'ハックスクワット', part: '脚' },
+      { name: 'インクラインレバーロウ', part: '背中' },
+    ]
+  },
+  functional: {
+    name: 'ファンクショナル',
+    icon: '🤸',
+    type: 'strength',
+    exercises: [
+      { name: 'バックエクステンション', part: '背中' },
+      { name: '腹筋ベンチ', part: '腹' },
+      { name: 'ケーブル', part: '全身' },
+      { name: 'ファンクショナルラック', part: '全身' },
+      { name: 'ケトルベル', part: '全身' },
+      { name: 'サンドバック', part: '全身' },
+      { name: 'パワーバッグ', part: '全身' },
+      { name: 'プライオボックス', part: '脚' },
+    ]
+  }
+};
+
+// =====================
+// STATE
+// =====================
+let state = {
+  selectedArea: null,
+  selectedExercise: null,
+  currentSets: [],
+  todayLog: [],
+  currentDate: getTodayStr(),
+};
+
+function getTodayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function formatDate(str) {
+  const d = new Date(str);
+  const days = ['日','月','火','水','木','金','土'];
+  return `${d.getMonth()+1}/${d.getDate()}（${days[d.getDay()]}）`;
+}
+
+// =====================
+// STORAGE
+// =====================
+function getStorage() {
+  try {
+    const data = localStorage.getItem('fitlog_v1');
+    return data ? JSON.parse(data) : {};
+  } catch(e) { return {}; }
+}
+
+function saveStorage(key, val) {
+  try {
+    const data = getStorage();
+    data[key] = val;
+    localStorage.setItem('fitlog_v1', JSON.stringify(data));
+  } catch(e) {}
+}
+
+function getHistory() {
+  const data = getStorage();
+  return data.history || {};
+}
+
+function saveTodayLog() {
+  const history = getHistory();
+  history[state.currentDate] = state.todayLog;
+  saveStorage('history', history);
+}
+
+// PR CHECK: returns true if this set is better than any previous
+function checkPR(exName, weight, reps) {
+  const history = getHistory();
+  let bestVol = 0;
+  for (const [date, log] of Object.entries(history)) {
+    if (date === state.currentDate) continue;
+    for (const entry of log) {
+      if (entry.name !== exName) continue;
+      for (const s of (entry.sets || [])) {
+        bestVol = Math.max(bestVol, (s.weight || 0) * (s.reps || 0));
+      }
+    }
+  }
+  return bestVol > 0 && weight * reps > bestVol;
+}
+
+// =====================
+// INIT
+// =====================
+document.getElementById('headerDate').textContent = formatDate(state.currentDate);
+
+// Load today's log if exists
+const savedHistory = getHistory();
+if (savedHistory[state.currentDate]) {
+  state.todayLog = savedHistory[state.currentDate];
+}
+
+// =====================
+// RENDER AREAS
+// =====================
+function renderAreas() {
+  const grid = document.getElementById('areaGrid');
+  grid.innerHTML = '';
+  for (const [key, area] of Object.entries(MACHINES)) {
+    const btn = document.createElement('button');
+    btn.className = 'area-btn';
+    btn.innerHTML = `
+      <span class="area-icon">${area.icon}</span>
+      <div class="area-name">${area.name}</div>
+      <div class="area-count">${area.exercises.length}種目</div>
+    `;
+    btn.onclick = () => selectArea(key);
+    grid.appendChild(btn);
+  }
+}
+
+renderAreas();
+
+// =====================
+// NAVIGATION
+// =====================
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  event.target.classList.add('active');
+
+  if (name === 'today') renderToday();
+  if (name === 'history') renderHistory();
+
+  updateFinishBtn();
+}
+
+function goBack(to) {
+  if (to === 'area') {
+    document.getElementById('step-exercise').style.display = 'none';
+    document.getElementById('step-area').style.display = 'block';
+    state.selectedArea = null;
+  } else if (to === 'exercise') {
+    document.getElementById('step-set').style.display = 'none';
+    document.getElementById('step-exercise').style.display = 'block';
+    state.currentSets = [];
+    state.selectedExercise = null;
+  }
+}
+
+function selectArea(key) {
+  state.selectedArea = key;
+  const area = MACHINES[key];
+  document.getElementById('step-area').style.display = 'none';
+  document.getElementById('step-exercise').style.display = 'block';
+  document.getElementById('stepExTitle').textContent = area.name.toUpperCase();
+
+  const list = document.getElementById('exerciseList');
+  list.innerHTML = '';
+  for (const ex of area.exercises) {
+    const item = document.createElement('div');
+    item.className = 'exercise-item';
+    item.innerHTML = `
+      <div>
+        <div class="ex-name">${ex.name}</div>
+        <div class="ex-part">${ex.part}</div>
+      </div>
+      <div class="ex-arrow">›</div>
+    `;
+    item.onclick = () => selectExercise(ex, area.type);
+    list.appendChild(item);
+  }
+}
+
+function selectExercise(ex, type) {
+  state.selectedExercise = ex;
+  state.currentSets = [];
+  document.getElementById('step-exercise').style.display = 'none';
+  document.getElementById('step-set').style.display = 'block';
+  document.getElementById('loggerExName').textContent = ex.name;
+  document.getElementById('loggerPartTag').textContent = ex.part;
+  document.getElementById('inputMemo').value = '';
+
+  const isCardio = type === 'cardio';
+  document.getElementById('cardioInputs').style.display = isCardio ? 'block' : 'none';
+  document.getElementById('strengthInputs').style.display = isCardio ? 'none' : 'block';
+  document.getElementById('addSetBtn').style.display = isCardio ? 'none' : 'inline-block';
+
+  renderSets();
+}
+
+// =====================
+// SET MANAGEMENT
+// =====================
+function addSet() {
+  const weight = parseFloat(document.getElementById('inputWeight').value);
+  const reps = parseInt(document.getElementById('inputReps').value);
+
+  if (!weight || !reps) {
+    showToast('重量と回数を入力してください');
+    return;
+  }
+
+  const isPR = checkPR(state.selectedExercise.name, weight, reps);
+  state.currentSets.push({ weight, reps, isPR });
+  document.getElementById('inputWeight').value = weight; // keep weight
+  document.getElementById('inputReps').value = '';
+  renderSets();
+}
+
+function deleteSet(i) {
+  state.currentSets.splice(i, 1);
+  renderSets();
+}
+
+function renderSets() {
+  const list = document.getElementById('setsList');
+  list.innerHTML = '';
+  state.currentSets.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.className = 'set-row';
+    row.innerHTML = `
+      <div class="set-num">${i+1}</div>
+      <div class="set-data">${s.weight}kg × ${s.reps}回 ${s.isPR ? '<span class="set-pr">🔥PR</span>' : ''}</div>
+      <button class="set-delete" onclick="deleteSet(${i})">×</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function saveExercise() {
+  const isCardio = MACHINES[state.selectedArea]?.type === 'cardio';
+  const memo = document.getElementById('inputMemo').value.trim();
+
+  let entry;
+  if (isCardio) {
+    const time = document.getElementById('cardioTime').value;
+    const dist = document.getElementById('cardioDist').value;
+    const level = document.getElementById('cardioLevel').value;
+    if (!time && !dist) { showToast('時間か距離を入力してください'); return; }
+    entry = {
+      name: state.selectedExercise.name,
+      area: MACHINES[state.selectedArea].name,
+      type: 'cardio',
+      time: time || null,
+      dist: dist || null,
+      level: level || null,
+      memo,
+    };
+  } else {
+    if (state.currentSets.length === 0) { showToast('セットを追加してください'); return; }
+    entry = {
+      name: state.selectedExercise.name,
+      area: MACHINES[state.selectedArea].name,
+      part: state.selectedExercise.part,
+      type: 'strength',
+      sets: state.currentSets,
+      memo,
+    };
+  }
+
+  state.todayLog.push(entry);
+  saveTodayLog();
+  showToast('✅ 保存しました！');
+  updateFinishBtn();
+
+  // Back to area select
+  state.currentSets = [];
+  document.getElementById('step-set').style.display = 'none';
+  document.getElementById('step-exercise').style.display = 'none';
+  document.getElementById('step-area').style.display = 'block';
+}
+
+// =====================
+// TODAY SCREEN
+// =====================
+function renderToday() {
+  const container = document.getElementById('todayContent');
+
+  if (state.todayLog.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">💪</div>
+        <div class="empty-title">今日はまだ記録なし</div>
+        <div class="empty-desc">「記録」タブから<br>トレーニングを追加しよう！</div>
+      </div>
+    `;
+    return;
+  }
+
+  // Stats
+  const totalSets = state.todayLog.reduce((a, e) => a + (e.sets?.length || 0), 0);
+  const totalVol = state.todayLog.reduce((a, e) => {
+    if (!e.sets) return a;
+    return a + e.sets.reduce((b, s) => b + s.weight * s.reps, 0);
+  }, 0);
+  const prCount = state.todayLog.reduce((a, e) => {
+    if (!e.sets) return a;
+    return a + e.sets.filter(s => s.isPR).length;
+  }, 0);
+
+  let html = `
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-value">${state.todayLog.length}</div>
+        <div class="stat-label">種目</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${totalSets}</div>
+        <div class="stat-label">総セット</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${prCount > 0 ? '🔥'+prCount : totalVol > 1000 ? Math.round(totalVol/1000)+'t' : totalVol+'kg'}</div>
+        <div class="stat-label">${prCount > 0 ? 'PR達成' : '総ボリューム'}</div>
+      </div>
+    </div>
+    <div id="aiPraiseArea"></div>
+    <div class="today-log">
+  `;
+
+  for (const entry of state.todayLog) {
+    html += `<div class="log-exercise-card">
+      <div class="log-ex-header">
+        <div>
+          <div class="log-ex-name">${entry.name}</div>
+          <div class="log-ex-area">${entry.area}</div>
+        </div>
+      </div>`;
+
+    if (entry.type === 'cardio') {
+      const parts = [];
+      if (entry.time) parts.push(`⏱ ${entry.time}分`);
+      if (entry.dist) parts.push(`📍 ${entry.dist}km`);
+      if (entry.level) parts.push(`Lv.${entry.level}`);
+      html += `<div class="log-set-line" style="font-weight:700">${parts.join('　')}</div>`;
+    } else {
+      entry.sets.forEach((s, i) => {
+        html += `<div class="log-set-line">
+          <div class="set-num">${i+1}</div>
+          <div style="flex:1;font-weight:700">${s.weight}kg × ${s.reps}回</div>
+          ${s.isPR ? '<span class="pr-badge">🔥 PR</span>' : ''}
+        </div>`;
+      });
+    }
+
+    if (entry.memo) {
+      html += `<div class="log-memo">📝 ${entry.memo}</div>`;
+    }
+
+    html += '</div>';
+  }
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// =====================
+// FINISH + AI PRAISE
+// =====================
+function updateFinishBtn() {
+  const wrap = document.getElementById('finishBtnWrap');
+  const screen = document.querySelector('.screen.active');
+  wrap.style.display = (state.todayLog.length > 0 && screen?.id === 'screen-today') ? 'block' : 'none';
+}
+
+async function finishWorkout() {
+  // Scroll to top of today
+  document.getElementById('aiPraiseArea').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('finishBtnWrap').style.display = 'none';
+
+  const praiseArea = document.getElementById('aiPraiseArea');
+  praiseArea.innerHTML = `
+    <div class="ai-praise-card">
+      <div class="ai-praise-header">
+        <div class="ai-icon">🤖</div>
+        <div>
+          <div class="ai-label">AI TRAINER</div>
+          <div class="ai-name">Claudeより</div>
+        </div>
+      </div>
+      <div class="ai-loading">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+    </div>
+  `;
+
+  // Build summary for AI
+  const summary = state.todayLog.map(e => {
+    if (e.type === 'cardio') {
+      return `${e.name}: ${e.time ? e.time+'分' : ''}${e.dist ? ' '+e.dist+'km' : ''}${e.level ? ' Lv.'+e.level : ''}`;
+    } else {
+      const setStr = e.sets.map((s,i) => `セット${i+1}: ${s.weight}kg×${s.reps}回${s.isPR?' (PR🔥)':''}`).join(', ');
+      return `${e.name}(${e.part}): ${setStr}${e.memo ? ' メモ:'+e.memo : ''}`;
+    }
+  }).join('\n');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `あなたは熱血かつ優しいパーソナルトレーナーです。以下のトレーニング記録を見て、日本語で褒めてください。
+具体的な数値（種目名、重量、回数など）に言及しながら、200文字程度で、テンション高めに励ましてください。
+PRが出ていたら特に大げさに褒めてください。メモに失敗の記録があれば、次回への前向きなアドバイスも一言添えてください。
+
+今日のトレーニング記録：
+${summary}`
+        }]
+      })
+    });
+
+    const data = await res.json();
+    const text = data.content?.[0]?.text || 'お疲れ様でした！すごく頑張りましたね💪';
+
+    praiseArea.innerHTML = `
+      <div class="ai-praise-card">
+        <div class="ai-praise-header">
+          <div class="ai-icon">🤖</div>
+          <div>
+            <div class="ai-label">AI TRAINER</div>
+            <div class="ai-name">Claudeより</div>
+          </div>
+        </div>
+        <div class="ai-text">${text.replace(/\n/g, '<br>')}</div>
+      </div>
+    `;
+  } catch(e) {
+    praiseArea.innerHTML = `
+      <div class="ai-praise-card">
+        <div class="ai-praise-header">
+          <div class="ai-icon">🤖</div>
+          <div><div class="ai-label">AI TRAINER</div></div>
+        </div>
+        <div class="ai-text">今日もよく頑張りました！継続は力なり💪 次のトレーニングも楽しみにしています！</div>
+      </div>
+    `;
+  }
+}
+
+// =====================
+// HISTORY SCREEN
+// =====================
+function renderHistory() {
+  const container = document.getElementById('historyContent');
+  const history = getHistory();
+  const dates = Object.keys(history).sort((a,b) => b.localeCompare(a));
+
+  if (dates.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📅</div>
+        <div class="empty-title">履歴なし</div>
+        <div class="empty-desc">トレーニングを記録すると<br>ここに履歴が表示されます</div>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+  for (const date of dates) {
+    const log = history[date];
+    const isToday = date === state.currentDate;
+    html += `<div class="history-day">
+      <div class="history-date">${formatDate(date)}${isToday ? ' 　今日' : ''}</div>
+    `;
+    for (const entry of log) {
+      html += `<div class="history-ex-row">
+        <div class="history-ex-name">${entry.name} <span style="color:var(--text-dim);font-size:11px">${entry.area}</span></div>
+        <div class="history-sets">
+      `;
+      if (entry.type === 'cardio') {
+        const parts = [];
+        if (entry.time) parts.push(`⏱${entry.time}分`);
+        if (entry.dist) parts.push(`📍${entry.dist}km`);
+        if (entry.level) parts.push(`Lv.${entry.level}`);
+        html += `<span class="history-set-chip">${parts.join(' ')}</span>`;
+      } else {
+        entry.sets.forEach(s => {
+          html += `<span class="history-set-chip ${s.isPR ? 'is-pr' : ''}">${s.weight}kg×${s.reps}${s.isPR ? '🔥' : ''}</span>`;
+        });
+      }
+      html += '</div>';
+      if (entry.memo) html += `<div class="log-memo" style="margin-top:8px">📝 ${entry.memo}</div>`;
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  container.innerHTML = html;
+}
+
+// =====================
+// TOAST
+// =====================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// Update finish button visibility on tab change
+document.querySelectorAll('.nav-tab').forEach((tab, i) => {
+  tab.addEventListener('click', () => {
+    setTimeout(updateFinishBtn, 50);
+  });
+});
+</script>
+</body>
+</html>
