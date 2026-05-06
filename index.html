@@ -763,6 +763,117 @@
   }
 
   .finish-btn:active { transform: scale(0.98); }
+
+  /* CALENDAR */
+  .cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .cal-month {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 3px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .cal-nav-btn {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 18px;
+    width: 36px; height: 36px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .cal-nav-btn:hover { border-color: var(--accent); }
+  .cal-stats { display: flex; gap: 10px; margin-bottom: 16px; }
+  .cal-stat {
+    flex: 1;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+  .cal-stat-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .cal-stat-label { font-size: 11px; color: var(--text-dim); font-weight: 700; }
+  .streak-card {
+    background: linear-gradient(135deg, rgba(255,61,107,0.1), rgba(255,140,66,0.08));
+    border: 1.5px solid rgba(255,61,107,0.25);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .streak-fire { font-size: 28px; }
+  .streak-val { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--accent); line-height: 1; }
+  .streak-label { font-size: 12px; color: var(--text-dim); font-weight: 700; }
+  .cal-grid-header { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; }
+  .cal-day-label { text-align: center; font-size: 11px; font-weight: 700; color: var(--text-dim); padding: 4px 0; }
+  .cal-day-label:first-child { color: #ff6b6b; }
+  .cal-day-label:last-child { color: #6b9fff; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 16px; }
+  .cal-cell {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-dim);
+  }
+  .cal-cell.empty { cursor: default; }
+  .cal-cell.today { border: 2px solid var(--accent); color: var(--text); }
+  .cal-cell.has-log { background: rgba(255,61,107,0.15); color: var(--text); }
+  .cal-cell.has-log.selected { background: var(--accent); color: white; }
+  .cal-cell:not(.empty):not(.has-log):hover { background: var(--surface2); }
+  .cal-dot { width: 5px; height: 5px; background: var(--accent); border-radius: 50%; position: absolute; bottom: 4px; }
+  .cal-cell.has-log .cal-dot { background: rgba(255,255,255,0.7); }
+  .cal-cell.has-log.selected .cal-dot { background: white; }
+  .cal-detail {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 16px;
+    animation: slideDown 0.2s ease;
+  }
+  @keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+  .cal-detail-date { background: var(--accent); padding: 10px 16px; font-size: 13px; font-weight: 900; }
+  .cal-detail-body { padding: 12px 16px; }
+  .cal-detail-ex { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .cal-detail-ex:last-child { border-bottom: none; }
+  .cal-detail-ex-name { font-weight: 700; margin-bottom: 4px; }
+  .cal-detail-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  /* PREV RECORD HINT */
+  .prev-record-hint {
+    background: rgba(6,214,160,0.08);
+    border: 1px solid rgba(6,214,160,0.2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--success);
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
 </style>
 </head>
 <body>
@@ -775,7 +886,7 @@
 <div class="nav-tabs">
   <button class="nav-tab active" onclick="showScreen('record')">📝 記録</button>
   <button class="nav-tab" onclick="showScreen('today')">今日</button>
-  <button class="nav-tab" onclick="showScreen('history')">📅 履歴</button>
+  <button class="nav-tab" onclick="showScreen('calendar')">📆 カレンダー</button>
   <button class="nav-tab" onclick="showScreen('complete')">🏆 図鑑</button>
 </div>
 
@@ -839,6 +950,7 @@
       <div class="sets-list" id="setsList"></div>
 
       <!-- Memo -->
+      <div id="prevRecordHint" class="prev-record-hint" style="display:none"></div>
       <div class="input-group" style="margin-bottom:12px">
         <div class="input-label">メモ（任意）</div>
         <textarea class="memo-field" id="inputMemo" placeholder="フォームが崩れた、次は重量下げるなど…"></textarea>
@@ -860,6 +972,11 @@
 <!-- HISTORY SCREEN -->
 <div class="screen" id="screen-history">
   <div id="historyContent"></div>
+</div>
+
+<!-- CALENDAR SCREEN -->
+<div class="screen" id="screen-calendar">
+  <div id="calendarContent"></div>
 </div>
 
 <!-- COMPLETE SCREEN -->
@@ -1073,6 +1190,7 @@ function showScreen(name) {
 
   if (name === 'today') renderToday();
   if (name === 'history') renderHistory();
+  if (name === 'calendar') renderCalendar();
   if (name === 'complete') renderComplete();
 
   updateFinishBtn();
@@ -1128,6 +1246,20 @@ function selectExercise(ex, type) {
   document.getElementById('cardioInputs').style.display = isCardio ? 'block' : 'none';
   document.getElementById('strengthInputs').style.display = isCardio ? 'none' : 'block';
   document.getElementById('addSetBtn').style.display = isCardio ? 'none' : 'inline-block';
+
+  // Show previous record hint
+  const hint = document.getElementById('prevRecordHint');
+  if (!isCardio) {
+    const prev = getPrevRecord(ex.name);
+    if (prev) {
+      hint.style.display = 'block';
+      hint.textContent = `📊 前回: ${prev}`;
+    } else {
+      hint.style.display = 'none';
+    }
+  } else {
+    hint.style.display = 'none';
+  }
 
   renderSets();
 }
@@ -1564,6 +1696,176 @@ function renderComplete() {
   }
 
   container.innerHTML = html;
+}
+
+// =====================
+// PREV RECORD
+// =====================
+function getPrevRecord(exName) {
+  const history = getHistory();
+  const dates = Object.keys(history).filter(d => d !== state.currentDate).sort((a,b) => b.localeCompare(a));
+  for (const date of dates) {
+    for (const entry of history[date]) {
+      if (entry.name === exName && entry.sets?.length > 0) {
+        const best = entry.sets.reduce((a, s) => s.weight * s.reps > a.weight * a.reps ? s : a, entry.sets[0]);
+        return `${best.weight}kg × ${best.reps}回 (${formatDate(date)})`;
+      }
+    }
+  }
+  return null;
+}
+
+// =====================
+// STREAK
+// =====================
+function calcStreak() {
+  const history = getHistory();
+  const dates = Object.keys(history).sort((a,b) => b.localeCompare(a));
+  if (dates.length === 0) return 0;
+  let streak = 0;
+  let cur = new Date(state.currentDate);
+  for (let i = 0; i < 365; i++) {
+    const key = cur.toISOString().slice(0, 10);
+    if (history[key]) {
+      streak++;
+      cur.setDate(cur.getDate() - 1);
+    } else if (i === 0) {
+      // today not yet recorded — check yesterday
+      cur.setDate(cur.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+// =====================
+// CALENDAR SCREEN
+// =====================
+let calState = { year: new Date().getFullYear(), month: new Date().getMonth(), selectedDate: null };
+
+function renderCalendar() {
+  const container = document.getElementById('calendarContent');
+  const history = getHistory();
+  const { year, month } = calState;
+
+  // Month stats
+  const monthDates = Object.keys(history).filter(d => d.startsWith(`${year}-${String(month+1).padStart(2,'0')}`));
+  const monthCount = monthDates.length;
+  const streak = calcStreak();
+
+  const monthLabel = `${year} / ${String(month+1).padStart(2,'0')}`;
+
+  let html = `
+    <div class="cal-header">
+      <button class="cal-nav-btn" onclick="calNav(-1)">‹</button>
+      <div class="cal-month">${monthLabel}</div>
+      <button class="cal-nav-btn" onclick="calNav(1)">›</button>
+    </div>
+    <div class="cal-stats">
+      <div class="cal-stat">
+        <div class="cal-stat-val">${monthCount}</div>
+        <div class="cal-stat-label">今月の来館</div>
+      </div>
+      <div class="cal-stat">
+        <div class="cal-stat-val">${streak}</div>
+        <div class="cal-stat-label">現在のストリーク</div>
+      </div>
+    </div>
+  `;
+
+  if (streak >= 2) {
+    html += `
+      <div class="streak-card">
+        <div class="streak-fire">🔥</div>
+        <div>
+          <div class="streak-val">${streak} DAY STREAK</div>
+          <div class="streak-label">${streak}日連続トレーニング中！すごい！</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Calendar grid
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayStr = state.currentDate;
+
+  html += `
+    <div class="cal-grid-header">
+      <div class="cal-day-label">日</div>
+      <div class="cal-day-label">月</div>
+      <div class="cal-day-label">火</div>
+      <div class="cal-day-label">水</div>
+      <div class="cal-day-label">木</div>
+      <div class="cal-day-label">金</div>
+      <div class="cal-day-label">土</div>
+    </div>
+    <div class="cal-grid">
+  `;
+
+  for (let i = 0; i < firstDay; i++) {
+    html += `<div class="cal-cell empty"></div>`;
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const hasLog = !!history[dateStr];
+    const isToday = dateStr === todayStr;
+    const isSelected = dateStr === calState.selectedDate;
+    const cls = ['cal-cell', hasLog ? 'has-log' : '', isToday ? 'today' : '', isSelected ? 'selected' : ''].filter(Boolean).join(' ');
+    html += `<div class="${cls}" onclick="calSelectDate('${dateStr}')">
+      ${d}
+      ${hasLog ? '<div class="cal-dot"></div>' : ''}
+    </div>`;
+  }
+
+  html += `</div>`;
+
+  // Detail panel
+  if (calState.selectedDate && history[calState.selectedDate]) {
+    const log = history[calState.selectedDate];
+    html += `<div class="cal-detail">
+      <div class="cal-detail-date">📅 ${formatDate(calState.selectedDate)}</div>
+      <div class="cal-detail-body">`;
+    for (const entry of log) {
+      html += `<div class="cal-detail-ex">
+        <div class="cal-detail-ex-name">${entry.name} <span style="color:var(--text-dim);font-size:11px">${entry.area}</span></div>
+        <div class="cal-detail-chips">`;
+      if (entry.type === 'cardio') {
+        const parts = [];
+        if (entry.time) parts.push(`⏱${entry.time}分`);
+        if (entry.dist) parts.push(`📍${entry.dist}km`);
+        if (entry.level) parts.push(`Lv.${entry.level}`);
+        html += `<span class="history-set-chip">${parts.join(' ')}</span>`;
+      } else {
+        (entry.sets || []).forEach(s => {
+          html += `<span class="history-set-chip ${s.isPR?'is-pr':''}">${s.weight}kg×${s.reps}${s.isPR?'🔥':''}</span>`;
+        });
+      }
+      html += `</div>`;
+      if (entry.memo) html += `<div class="log-memo" style="margin-top:6px">📝 ${entry.memo}</div>`;
+      html += `</div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function calNav(dir) {
+  calState.month += dir;
+  if (calState.month > 11) { calState.month = 0; calState.year++; }
+  if (calState.month < 0) { calState.month = 11; calState.year--; }
+  calState.selectedDate = null;
+  renderCalendar();
+}
+
+function calSelectDate(dateStr) {
+  const history = getHistory();
+  if (!history[dateStr]) return;
+  calState.selectedDate = calState.selectedDate === dateStr ? null : dateStr;
+  renderCalendar();
 }
 
 // =====================
