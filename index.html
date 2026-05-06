@@ -628,7 +628,29 @@
     margin-bottom: 12px;
   }
 
-  /* Finish button */
+  /* CSV BUTTONS */
+  .csv-btn-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .csv-btn {
+    flex: 1;
+    padding: 11px 10px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .csv-btn:hover { border-color: var(--success); color: var(--success); }
+  .csv-btn-all { border-color: rgba(6,214,160,0.3); color: var(--success); }
   .finish-btn-wrap {
     padding: 16px;
     position: sticky;
@@ -1139,6 +1161,10 @@ function renderToday() {
         <div class="stat-label">${prCount > 0 ? 'PR達成' : '総ボリューム'}</div>
       </div>
     </div>
+    <div class="csv-btn-row">
+      <button class="csv-btn" onclick="downloadCSV('today')">📥 今日分CSV</button>
+      <button class="csv-btn csv-btn-all" onclick="downloadCSV('all')">📦 全履歴CSV</button>
+    </div>
     <div id="aiPraiseArea"></div>
     <div class="today-log">
   `;
@@ -1287,7 +1313,12 @@ function renderHistory() {
     return;
   }
 
-  let html = '';
+  let html = `
+    <div class="csv-btn-row">
+      <button class="csv-btn" onclick="downloadCSV('today')">📥 今日分CSV</button>
+      <button class="csv-btn csv-btn-all" onclick="downloadCSV('all')">📦 全履歴CSV</button>
+    </div>
+  `;
   for (const date of dates) {
     const log = history[date];
     const isToday = date === state.currentDate;
@@ -1317,6 +1348,51 @@ function renderHistory() {
     html += '</div>';
   }
   container.innerHTML = html;
+}
+
+// =====================
+// CSV DOWNLOAD
+// =====================
+function downloadCSV(range) {
+  const history = getHistory();
+  let rows = [['日付', 'エリア', '種目', '部位', 'タイプ', 'セット', '重量(kg)', '回数', '時間(分)', '距離(km)', 'レベル', 'PR', 'メモ']];
+
+  const dates = range === 'today'
+    ? [state.currentDate]
+    : Object.keys(history).sort();
+
+  for (const date of dates) {
+    const log = history[date] || [];
+    for (const entry of log) {
+      if (entry.type === 'cardio') {
+        rows.push([
+          date, entry.area, entry.name, '', 'cardio', '', '', '',
+          entry.time || '', entry.dist || '', entry.level || '', '',
+          entry.memo || ''
+        ]);
+      } else {
+        (entry.sets || []).forEach((s, i) => {
+          rows.push([
+            date, entry.area, entry.name, entry.part || '', 'strength',
+            i + 1, s.weight, s.reps, '', '', '',
+            s.isPR ? 'PR' : '',
+            i === 0 ? (entry.memo || '') : ''
+          ]);
+        });
+      }
+    }
+  }
+
+  const csv = '\uFEFF' + rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const filename = range === 'today' ? `fitlog_${state.currentDate}.csv` : `fitlog_all.csv`;
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`📥 ${filename} をダウンロード`);
 }
 
 // =====================
