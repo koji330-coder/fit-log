@@ -975,30 +975,75 @@ async function finishWorkout() {
   soundComplete();
   document.getElementById('finishBtnWrap').style.display = 'none';
   const praiseArea = document.getElementById('aiPraiseArea');
-  praiseArea.innerHTML = `<div class="ai-praise-card"><div class="ai-praise-header"><div class="ai-icon">🤖</div><div><div class="ai-label">AI TRAINER</div><div class="ai-name">Claudeより</div></div></div><div class="ai-loading"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+  praiseArea.innerHTML = `
+    <div class="ai-praise-card">
+      <div class="ai-praise-header">
+        <div class="ai-icon">🌸</div>
+        <div><div class="ai-label">AI TRAINER</div><div class="ai-name">舞香より</div></div>
+      </div>
+      <div class="ai-loading"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    </div>`;
   praiseArea.scrollIntoView({ behavior: 'smooth' });
 
   const log = state.history[state.recordingDate] || [];
-  const summary = log.map(e => {
-    if (e.type === 'cardio') return `${e.name}: ${e.time?e.time+'分':''} ${e.dist?e.dist+'km':''} ${e.level?'Lv.'+e.level:''}`;
-    return `${e.name}(${e.part}): ${(e.sets||[]).map((s,i)=>`セット${i+1}: ${s.weight}kg×${s.reps}回${s.isPR?' (PR🔥)':''}`).join(', ')}${e.memo?' メモ:'+e.memo:''}`;
+  const menu = state.menus[state.activeMenu];
+
+  // 今日の記録サマリー
+  const recordSummary = log.map(e => {
+    if (e.type === 'cardio') {
+      return `${e.name}: ${e.time?e.time+'分':''} ${e.dist?e.dist+'km':''} ${e.level?'Lv.'+e.level:''}`;
+    }
+    return `${e.name}(${e.part||''}): ${(e.sets||[]).map((s,i)=>`セット${i+1}: ${s.weight}kg×${s.reps}回${s.isPR?' PR🔥':''}`).join(', ')}${e.memo?' メモ:'+e.memo:''}`;
   }).join('\n');
 
+  // メニュー達成状況
+  let menuSummary = 'メニューなし';
+  if (menu) {
+    const doneNames = new Set(log.map(e => e.name));
+    const doneCount = menu.items.filter(i => doneNames.has(i.name)).length;
+    const total = menu.items.length;
+    const undone = menu.items.filter(i => !doneNames.has(i.name)).map(i => i.name);
+    menuSummary = `メニュー達成: ${doneCount}/${total}種目`;
+    if (undone.length > 0) menuSummary += `\n未実施: ${undone.join('、')}`;
+  }
+
+  const prompt = `あなたは＝LOVEの佐々木舞香です。清楚な美人だけど中身はアニオタで、サバサバしていて物事をはっきり言うツンデレキャラです。普段はクールだけど、頑張っている人には情が深く、甘えてくることもある。
+
+ガッキーという筋トレ初心者の友達が今日のジムトレーニングを終えました。記録とメニュー達成状況を見て、舞香らしいキャラクターで以下の2つをセットで返してください：
+
+①今日の頑張りへの褒め（具体的な数値に触れながら、テンション高めに。PR🔥があれば大げさに褒める）
+②次回へのアドバイス（メモの内容や未達成種目を踏まえて、前向きに一言）
+
+【今日の記録】
+${recordSummary}
+
+【メニュー状況】
+${menuSummary}
+
+200〜250文字程度で、舞香らしい話し方で返してください。「〜じゃん」「〜だけど」「まぁ」などのサバサバした口調を使いつつ、最後はちょっと照れながら応援してください。`;
+
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: `あなたは熱血かつ優しいパーソナルトレーナーです。以下のトレーニング記録を見て、日本語で褒めてください。具体的な数値（種目名、重量、回数など）に言及しながら、200文字程度で、テンション高めに励ましてください。PRが出ていたら特に大げさに褒めてください。メモに失敗の記録があれば、次回への前向きなアドバイスも一言添えてください。\n\n今日のトレーニング記録：\n${summary}` }]
-      })
-    });
-    const data = await res.json();
-    const text = data.content?.[0]?.text || 'お疲れ様でした！すごく頑張りましたね💪';
-    praiseArea.innerHTML = `<div class="ai-praise-card"><div class="ai-praise-header"><div class="ai-icon">🤖</div><div><div class="ai-label">AI TRAINER</div><div class="ai-name">Claudeより</div></div></div><div class="ai-text">${text.replace(/\n/g,'<br>')}</div></div>`;
+    const result = await gasPost({ action: 'getAiComment', prompt });
+    const text = result.status === 'ok'
+      ? result.text
+      : '今日もよく頑張りました！継続は力なり💪';
+    praiseArea.innerHTML = `
+      <div class="ai-praise-card">
+        <div class="ai-praise-header">
+          <div class="ai-icon">🌸</div>
+          <div><div class="ai-label">AI TRAINER</div><div class="ai-name">舞香より</div></div>
+        </div>
+        <div class="ai-text">${text.replace(/\n/g,'<br>')}</div>
+      </div>`;
   } catch(e) {
-    praiseArea.innerHTML = `<div class="ai-praise-card"><div class="ai-praise-header"><div class="ai-icon">🤖</div><div><div class="ai-label">AI TRAINER</div></div></div><div class="ai-text">今日もよく頑張りました！継続は力なり💪</div></div>`;
+    praiseArea.innerHTML = `
+      <div class="ai-praise-card">
+        <div class="ai-praise-header">
+          <div class="ai-icon">🌸</div>
+          <div><div class="ai-label">AI TRAINER</div><div class="ai-name">舞香より</div></div>
+        </div>
+        <div class="ai-text">今日もよく頑張ったじゃん。まぁ、続けることが大事だから。次も来てね。…べ、別に心配してるわけじゃないけど💪</div>
+      </div>`;
   }
 }
 
