@@ -310,9 +310,13 @@
   .finish-btn:active { transform: scale(0.98); }
 
   /* TOAST */
-  .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--success); color: #0a3d2e; padding: 12px 24px; border-radius: 20px; font-size: 13px; font-weight: 700; z-index: 999; transition: transform 0.3s ease; white-space: nowrap; }
-  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast { position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%) translateY(200px); background: var(--success); color: #0a3d2e; padding: 12px 24px; border-radius: 20px; font-size: 13px; font-weight: 700; z-index: 1000; transition: transform 0.3s ease, opacity 0.3s ease; white-space: nowrap; opacity: 0; pointer-events: none; }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
   .toast.error { background: var(--accent); color: white; }
+
+  /* DELETE ENTRY BUTTON */
+  .delete-entry-btn { background: none; border: none; color: var(--text-dim); font-size: 18px; cursor: pointer; padding: 2px 6px; border-radius: 6px; transition: all 0.15s; line-height: 1; }
+  .delete-entry-btn:hover { background: rgba(255,61,107,0.15); color: var(--accent); }
 </style>
 </head>
 <body>
@@ -817,8 +821,8 @@ function renderToday() {
     <div class="today-log">
   `;
 
-  for (const entry of log) {
-    html += `<div class="log-exercise-card"><div class="log-ex-header"><div><div class="log-ex-name">${entry.name}</div><div class="log-ex-area">${entry.area}</div></div></div>`;
+  for (const [entryIdx, entry] of log.entries()) {
+    html += `<div class="log-exercise-card"><div class="log-ex-header"><div><div class="log-ex-name">${entry.name}</div><div class="log-ex-area">${entry.area}</div></div><button class="delete-entry-btn" onclick="deleteEntry(${entryIdx})" title="削除">🗑</button></div>`;
     if (entry.type === 'cardio') {
       const parts = [];
       if (entry.time) parts.push(`⏱ ${entry.time}分`);
@@ -835,6 +839,28 @@ function renderToday() {
   }
   html += '</div>';
   container.innerHTML = html;
+}
+
+// =============================================
+// DELETE ENTRY
+// =============================================
+async function deleteEntry(idx) {
+  if (!confirm('この種目の記録を削除しますか？')) return;
+  const date = state.recordingDate;
+  state.history[date].splice(idx, 1);
+  if (state.history[date].length === 0) delete state.history[date];
+
+  // GASに全件上書き保存
+  try {
+    const entries = (state.history[date] || []).map(e => ({ ...e, date }));
+    await gasPost({ action: 'saveDay', date, entries });
+    showToast('🗑 削除しました');
+  } catch(e) {
+    showToast('削除失敗（通信エラー）', true);
+  }
+
+  renderToday();
+  updateFinishBtn();
 }
 
 // =============================================
@@ -1111,8 +1137,12 @@ function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'toast' + (isError ? ' error' : '');
+  // Force reflow to restart animation
+  t.classList.remove('show');
+  void t.offsetWidth;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
 // =============================================
