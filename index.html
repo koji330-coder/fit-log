@@ -860,7 +860,15 @@ async function saveExercise() {
   // Send to GAS
   try {
     await gasPost({ action: 'save', entries: [entry] });
-    showToast('✅ 保存しました！');
+    // PR更新があれば特別音、なければ通常保存音
+    const hasPR = entry.sets?.some(s => s.isPR);
+    if (hasPR) {
+      soundPR();
+      showToast('🔥 PR更新！すごい！');
+    } else {
+      soundSave();
+      showToast('✅ 保存しました！');
+    }
   } catch(e) {
     showToast('⚠️ 保存失敗（通信エラー）', true);
   }
@@ -964,6 +972,7 @@ function updateFinishBtn() {
 }
 
 async function finishWorkout() {
+  soundComplete();
   document.getElementById('finishBtnWrap').style.display = 'none';
   const praiseArea = document.getElementById('aiPraiseArea');
   praiseArea.innerHTML = `<div class="ai-praise-card"><div class="ai-praise-header"><div class="ai-icon">🤖</div><div><div class="ai-label">AI TRAINER</div><div class="ai-name">Claudeより</div></div></div><div class="ai-loading"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
@@ -1400,6 +1409,82 @@ function showToast(msg, isError = false) {
   t.classList.add('show');
   clearTimeout(t._timer);
   t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// =============================================
+// SOUND ENGINE (Web Audio API)
+// =============================================
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+  return audioCtx;
+}
+
+function playNote(freq, startTime, duration, ctx, gainNode, type = 'square') {
+  const osc = ctx.createOscillator();
+  const envGain = ctx.createGain();
+  osc.connect(envGain);
+  envGain.connect(gainNode);
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, startTime);
+  envGain.gain.setValueAtTime(0.3, startTime);
+  envGain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+  osc.start(startTime);
+  osc.stop(startTime + duration);
+}
+
+// 🔥 PR更新音：上昇する短いファンファーレ
+function soundPR() {
+  try {
+    const ctx = getAudioCtx();
+    const gain = ctx.createGain();
+    gain.gain.value = 0.4;
+    gain.connect(ctx.destination);
+    const t = ctx.currentTime;
+    const melody = [
+      [523, 0.00, 0.12], // ド
+      [659, 0.12, 0.12], // ミ
+      [784, 0.24, 0.12], // ソ
+      [1047,0.36, 0.30], // ド（高）
+    ];
+    melody.forEach(([freq, offset, dur]) => playNote(freq, t + offset, dur, ctx, gain));
+  } catch(e) {}
+}
+
+// 🏁 トレーニング完了音：ゴージャスなファンファーレ
+function soundComplete() {
+  try {
+    const ctx = getAudioCtx();
+    const gain = ctx.createGain();
+    gain.gain.value = 0.35;
+    gain.connect(ctx.destination);
+    const t = ctx.currentTime;
+    const melody = [
+      [392, 0.00, 0.12], // ソ
+      [392, 0.13, 0.12], // ソ
+      [392, 0.26, 0.12], // ソ
+      [523, 0.39, 0.40], // ド
+      [659, 0.80, 0.12], // ミ
+      [784, 0.93, 0.12], // ソ
+      [1047,1.06, 0.60], // ド（高）長め
+    ];
+    melody.forEach(([freq, offset, dur]) => playNote(freq, t + offset, dur, ctx, gain));
+  } catch(e) {}
+}
+
+// 💾 通常保存音：軽いポップ音
+function soundSave() {
+  try {
+    const ctx = getAudioCtx();
+    const gain = ctx.createGain();
+    gain.gain.value = 0.2;
+    gain.connect(ctx.destination);
+    const t = ctx.currentTime;
+    playNote(880, t, 0.08, ctx, gain);
+    playNote(1100, t + 0.09, 0.12, ctx, gain);
+  } catch(e) {}
 }
 
 // =============================================
