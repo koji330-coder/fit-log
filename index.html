@@ -974,6 +974,11 @@ function updateFinishBtn() {
 async function finishWorkout() {
   soundComplete();
   document.getElementById('finishBtnWrap').style.display = 'none';
+
+  const log = state.history[state.recordingDate] || [];
+  const menu = state.menus[state.activeMenu];
+  const trainerName = menu?.trainer || '佐々木舞香';
+
   const praiseArea = document.getElementById('aiPraiseArea');
   praiseArea.innerHTML = `
     <div class="ai-praise-card">
@@ -984,10 +989,6 @@ async function finishWorkout() {
       <div class="ai-loading"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
     </div>`;
   praiseArea.scrollIntoView({ behavior: 'smooth' });
-
-  const log = state.history[state.recordingDate] || [];
-  const menu = state.menus[state.activeMenu];
-  const trainerName = menu?.trainer || '佐々木舞香';
 
   // 今日の記録サマリー
   const recordSummary = log.map(e => {
