@@ -1190,8 +1190,9 @@ function renderMenu() {
       if (item.reps) parts.push(`×${item.reps}回`);
       detail = parts.join(' ');
     }
+    const itemJson = encodeURIComponent(JSON.stringify(item));
     html += `
-      <div class="menu-item-card ${done ? 'done' : ''}">
+      <div class="menu-item-card ${done ? 'done' : ''}" onclick="${done ? '' : `jumpToRecord('${itemJson}')`}" style="${done ? '' : 'cursor:pointer'}">
         <div class="menu-item-num">${done ? '✓' : item.order}</div>
         <div style="flex:1">
           <div class="menu-item-name">${item.name}</div>
@@ -1209,6 +1210,62 @@ function renderMenu() {
 function switchMenu(type) {
   state.activeMenu = type;
   renderMenu();
+}
+
+function jumpToRecord(itemJson) {
+  const item = JSON.parse(decodeURIComponent(itemJson));
+
+  // エリアキーを探す
+  let areaKey = null;
+  for (const [key, area] of Object.entries(MACHINES)) {
+    if (area.name === item.area) { areaKey = key; break; }
+  }
+  if (!areaKey) { showToast('エリアが見つかりません', true); return; }
+
+  // 記録タブに切り替え
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-record').classList.add('active');
+  document.querySelector('.nav-tab').classList.add('active');
+
+  // エリア→種目→セット入力画面へ
+  document.getElementById('step-area').style.display = 'none';
+  document.getElementById('step-exercise').style.display = 'none';
+  document.getElementById('step-set').style.display = 'block';
+
+  state.selectedArea = areaKey;
+  state.selectedExercise = { name: item.name, part: item.area };
+  state.currentSets = [];
+
+  document.getElementById('loggerExName').textContent = item.name;
+  document.getElementById('loggerPartTag').textContent = item.type === 'cardio' ? '有酸素' : item.area;
+
+  const isCardio = item.type === 'cardio';
+  document.getElementById('cardioInputs').style.display = isCardio ? 'block' : 'none';
+  document.getElementById('strengthInputs').style.display = isCardio ? 'none' : 'block';
+  document.getElementById('addSetBtn').style.display = isCardio ? 'none' : 'inline-block';
+  document.getElementById('inputMemo').value = '';
+
+  // 目標値をプレースホルダーに表示
+  if (!isCardio) {
+    if (item.weight) document.getElementById('inputWeight').placeholder = `目標 ${item.weight}kg`;
+    if (item.reps) document.getElementById('inputReps').placeholder = `目標 ${item.reps}回`;
+  } else {
+    if (item.time) document.getElementById('cardioTime').placeholder = `目標 ${item.time}分`;
+  }
+
+  // 前回記録ヒント
+  const hint = document.getElementById('prevRecordHint');
+  if (!isCardio) {
+    const prev = getPrevRecord(item.name);
+    if (prev) { hint.style.display = 'block'; hint.textContent = `📊 前回: ${prev}`; }
+    else { hint.style.display = 'none'; }
+  } else {
+    hint.style.display = 'none';
+  }
+
+  renderSets();
+  updateFinishBtn();
 }
 
 async function importMenu() {
