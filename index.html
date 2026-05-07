@@ -979,7 +979,7 @@ async function finishWorkout() {
     <div class="ai-praise-card">
       <div class="ai-praise-header">
         <div class="ai-icon">🌸</div>
-        <div><div class="ai-label">AI TRAINER</div><div class="ai-name">舞香より</div></div>
+        <div><div class="ai-label">AI TRAINER</div><div class="ai-name">${trainerName}より</div></div>
       </div>
       <div class="ai-loading"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
     </div>`;
@@ -1035,7 +1035,7 @@ ${menuSummary}
       <div class="ai-praise-card">
         <div class="ai-praise-header">
           <div class="ai-icon">🌸</div>
-          <div><div class="ai-label">AI TRAINER</div><div class="ai-name">舞香より</div></div>
+          <div><div class="ai-label">AI TRAINER</div><div class="ai-name">${trainerName}より</div></div>
         </div>
         <div class="ai-text">${text.replace(/\n/g,'<br>')}</div>
       </div>`;
@@ -1044,7 +1044,7 @@ ${menuSummary}
       <div class="ai-praise-card">
         <div class="ai-praise-header">
           <div class="ai-icon">🌸</div>
-          <div><div class="ai-label">AI TRAINER</div><div class="ai-name">舞香より</div></div>
+          <div><div class="ai-label">AI TRAINER</div><div class="ai-name">${trainerName}より</div></div>
         </div>
         <div class="ai-text">今日もよく頑張ったじゃん。まぁ、続けることが大事だから。次も来てね。…べ、別に心配してるわけじゃないけど💪</div>
       </div>`;
@@ -1221,7 +1221,7 @@ function renderMenu() {
       <div class="maika-card">
         <div class="maika-avatar">🌸</div>
         <div>
-          <div class="maika-name">舞香より</div>
+      <div class="maika-name">${menu.trainer || ''}より</div>
           <div class="maika-text">${menu.comment}</div>
         </div>
       </div>
