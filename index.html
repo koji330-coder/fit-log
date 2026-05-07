@@ -1023,11 +1023,11 @@ async function finishWorkout() {
 
   // 設定で選んだトレーナーを優先、なければメニューのトレーナーを使う
   let trainerName = state.selectedTrainer;
+  const activeKey = state.activeMenu
+    || (state.menus['menu_sunny'] ? 'menu_sunny' : null)
+    || (state.menus['menu_rainy'] ? 'menu_rainy' : null);
+  const menu = activeKey ? state.menus[activeKey] : null;
   if (!trainerName) {
-    const activeKey = state.activeMenu
-      || (state.menus['menu_sunny'] ? 'menu_sunny' : null)
-      || (state.menus['menu_rainy'] ? 'menu_rainy' : null);
-    const menu = activeKey ? state.menus[activeKey] : null;
     trainerName = menu?.trainer || '佐々木舞香';
   }
 
