@@ -304,6 +304,79 @@
   .empty-state .empty-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
   .empty-state .empty-desc { font-size: 13px; line-height: 1.6; }
 
+  /* MENU SCREEN */
+  .menu-type-btns { display: flex; gap: 10px; margin-bottom: 16px; }
+  .menu-type-btn {
+    flex: 1; padding: 14px; border-radius: 12px;
+    border: 2px solid var(--border); background: var(--surface);
+    color: var(--text-dim); font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+    text-align: center;
+  }
+  .menu-type-btn.active { border-color: var(--accent); background: rgba(255,61,107,0.1); color: var(--text); }
+
+  .maika-card {
+    background: linear-gradient(135deg, rgba(255,61,107,0.08), rgba(255,140,66,0.06));
+    border: 1.5px solid rgba(255,61,107,0.2);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .maika-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .maika-name { font-size: 10px; color: var(--accent); font-weight: 900; letter-spacing: 1px; margin-bottom: 4px; }
+  .maika-text { font-size: 13px; line-height: 1.7; color: var(--text); }
+
+  .menu-item-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    transition: all 0.2s;
+  }
+  .menu-item-card.done { border-color: var(--success); background: rgba(6,214,160,0.06); opacity: 0.7; }
+  .menu-item-num {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--surface2); display: flex; align-items: center;
+    justify-content: center; font-size: 12px; font-weight: 900;
+    color: var(--text-dim); flex-shrink: 0;
+  }
+  .menu-item-card.done .menu-item-num { background: var(--success); color: white; }
+  .menu-item-name { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+  .menu-item-detail { font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+  .menu-item-intent { font-size: 11px; color: var(--accent2); line-height: 1.5; }
+  .menu-check { font-size: 18px; margin-left: auto; flex-shrink: 0; align-self: center; }
+
+  .import-btn-wrap { margin-bottom: 20px; }
+  .import-btn {
+    width: 100%; padding: 12px; border-radius: 10px;
+    border: 1.5px dashed var(--border); background: transparent;
+    color: var(--text-dim); font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+  }
+  .import-btn:hover { border-color: var(--success); color: var(--success); }
+
+  .menu-progress {
+    background: var(--surface2); border-radius: 20px;
+    height: 6px; overflow: hidden; margin-bottom: 16px;
+  }
+  .menu-progress-bar {
+    height: 100%; border-radius: 20px;
+    background: linear-gradient(90deg, var(--success), #0aab7c);
+    transition: width 0.4s ease;
+  }
+
   /* FINISH BUTTON */
   .finish-btn-wrap { padding: 16px; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: linear-gradient(to top, var(--bg) 80%, transparent); }
   .finish-btn { width: 100%; padding: 18px; border-radius: 14px; border: none; background: linear-gradient(135deg, var(--success), #0aab7c); color: white; font-family: 'Noto Sans JP', sans-serif; font-size: 15px; font-weight: 900; cursor: pointer; letter-spacing: 2px; transition: all 0.2s; }
@@ -354,8 +427,8 @@
 
 <div class="nav-tabs">
   <button class="nav-tab active" onclick="showScreen('record')">📝 記録</button>
+  <button class="nav-tab" onclick="showScreen('menu')">🎯 メニュー</button>
   <button class="nav-tab" onclick="showScreen('today')">今日</button>
-  <button class="nav-tab" onclick="showScreen('history')">📅 履歴</button>
   <button class="nav-tab" onclick="showScreen('calendar')">📆 カレンダー</button>
   <button class="nav-tab" onclick="showScreen('complete')">🏆 図鑑</button>
 </div>
@@ -422,6 +495,11 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- MENU SCREEN -->
+<div class="screen" id="screen-menu">
+  <div id="menuContent"></div>
 </div>
 
 <!-- TODAY SCREEN -->
@@ -522,7 +600,9 @@ let state = {
   selectedArea: null,
   selectedExercise: null,
   currentSets: [],
-  history: {}, // { 'YYYY-MM-DD': [entry, ...] }
+  history: {},
+  menus: {}, // { menu_sunny: { comment, items }, menu_rainy: { comment, items } }
+  activeMenu: null, // 'menu_sunny' or 'menu_rainy'
 };
 
 let calState = { year: new Date().getFullYear(), month: new Date().getMonth(), selectedDate: null };
@@ -564,6 +644,7 @@ async function init() {
     const result = await gasGet({ action: 'getAll' });
     if (result.status === 'ok') {
       state.history = result.data || {};
+      state.menus = result.menus || {};
     } else {
       showToast('データ読み込みエラー', true);
     }
@@ -645,6 +726,7 @@ function showScreen(name) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('screen-' + name).classList.add('active');
   event.target.classList.add('active');
+  if (name === 'menu') renderMenu();
   if (name === 'today') renderToday();
   if (name === 'history') renderHistory();
   if (name === 'calendar') renderCalendar();
@@ -1035,6 +1117,116 @@ function calSelectDate(dateStr) {
 
 // =============================================
 // COMPLETE SCREEN
+// =============================================
+// MENU SCREEN
+// =============================================
+function renderMenu() {
+  const container = document.getElementById('menuContent');
+  const hasSunny = !!state.menus['menu_sunny'];
+  const hasRainy = !!state.menus['menu_rainy'];
+
+  if (!hasSunny && !hasRainy) {
+    container.innerHTML = `
+      <div class="import-btn-wrap">
+        <button class="import-btn" onclick="importMenu()">📥 DriveからメニューCSVを取込</button>
+      </div>
+      <div class="empty-state">
+        <div class="empty-icon">🎯</div>
+        <div class="empty-title">メニューがありません</div>
+        <div class="empty-desc">DriveのMenuフォルダに<br>menu_sunny.csv / menu_rainy.csv を置いて<br>取込ボタンを押してください</div>
+      </div>
+    `;
+    return;
+  }
+
+  if (!state.activeMenu) state.activeMenu = hasSunny ? 'menu_sunny' : 'menu_rainy';
+  const menu = state.menus[state.activeMenu];
+  if (!menu) return;
+
+  const todayLog = state.history[state.recordingDate] || [];
+  const doneNames = new Set(todayLog.map(e => e.name));
+  const doneCount = menu.items.filter(i => doneNames.has(i.name)).length;
+  const pct = menu.items.length > 0 ? Math.round(doneCount / menu.items.length * 100) : 0;
+
+  let html = `
+    <div class="import-btn-wrap">
+      <button class="import-btn" onclick="importMenu()">📥 DriveからメニューCSVを取込</button>
+    </div>
+    <div class="menu-type-btns">
+      <button class="menu-type-btn ${state.activeMenu === 'menu_sunny' ? 'active' : ''}" onclick="switchMenu('menu_sunny')">☀️ 晴れの日</button>
+      <button class="menu-type-btn ${state.activeMenu === 'menu_rainy' ? 'active' : ''}" onclick="switchMenu('menu_rainy')">🌧️ 雨の日</button>
+    </div>
+  `;
+
+  if (menu.comment) {
+    html += `
+      <div class="maika-card">
+        <div class="maika-avatar">🌸</div>
+        <div>
+          <div class="maika-name">舞香より</div>
+          <div class="maika-text">${menu.comment}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  html += `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:12px;color:var(--text-dim);font-weight:700">${doneCount}/${menu.items.length} 完了</div>
+      <div style="font-size:12px;color:var(--success);font-weight:700">${pct}%</div>
+    </div>
+    <div class="menu-progress"><div class="menu-progress-bar" style="width:${pct}%"></div></div>
+  `;
+
+  for (const item of menu.items) {
+    const done = doneNames.has(item.name);
+    let detail = '';
+    if (item.type === 'cardio') {
+      detail = item.time ? `${item.time}分` : '';
+    } else {
+      const parts = [];
+      if (item.sets) parts.push(`${item.sets}セット`);
+      if (item.weight) parts.push(`${item.weight}kg`);
+      if (item.reps) parts.push(`×${item.reps}回`);
+      detail = parts.join(' ');
+    }
+    html += `
+      <div class="menu-item-card ${done ? 'done' : ''}">
+        <div class="menu-item-num">${done ? '✓' : item.order}</div>
+        <div style="flex:1">
+          <div class="menu-item-name">${item.name}</div>
+          <div class="menu-item-detail">${item.area}　${detail}</div>
+          ${item.intent ? `<div class="menu-item-intent">💡 ${item.intent}</div>` : ''}
+        </div>
+        <div class="menu-check">${done ? '✅' : '⬜'}</div>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+}
+
+function switchMenu(type) {
+  state.activeMenu = type;
+  renderMenu();
+}
+
+async function importMenu() {
+  showToast('取込中...');
+  try {
+    const result = await gasPost({ action: 'importMenu' });
+    if (result.status === 'ok') {
+      state.menus = result.menus || {};
+      showToast('✅ メニューを取込みました！');
+      renderMenu();
+    } else {
+      showToast('取込失敗: ' + (result.message || ''), true);
+    }
+  } catch(e) {
+    showToast('通信エラー', true);
+  }
+}
+
 // =============================================
 function renderComplete() {
   const container = document.getElementById('completeContent');
