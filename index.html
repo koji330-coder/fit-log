@@ -1419,8 +1419,30 @@ let audioCtx = null;
 
 function getAudioCtx() {
   if (!audioCtx) audioCtx = new AudioCtx();
+  // iOSはsuspended状態で始まるのでresumeが必要
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   return audioCtx;
 }
+
+// iOS用：最初のタップでAudioContextを解除
+function unlockAudio() {
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  } else if (!audioCtx) {
+    audioCtx = new AudioCtx();
+    // 無音を再生してロック解除
+    const buf = audioCtx.createBuffer(1, 1, 22050);
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    src.connect(audioCtx.destination);
+    src.start(0);
+  }
+  document.removeEventListener('touchstart', unlockAudio);
+  document.removeEventListener('click', unlockAudio);
+}
+
+document.addEventListener('touchstart', unlockAudio, { once: true });
+document.addEventListener('click', unlockAudio, { once: true });
 
 function playNote(freq, startTime, duration, ctx, gainNode, type = 'square') {
   const osc = ctx.createOscillator();
