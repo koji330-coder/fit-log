@@ -987,6 +987,7 @@ async function finishWorkout() {
 
   const log = state.history[state.recordingDate] || [];
   const menu = state.menus[state.activeMenu];
+  const trainerName = menu?.trainer || '佐々木舞香';
 
   // 今日の記録サマリー
   const recordSummary = log.map(e => {
@@ -1007,11 +1008,14 @@ async function finishWorkout() {
     if (undone.length > 0) menuSummary += `\n未実施: ${undone.join('、')}`;
   }
 
-  const prompt = `あなたは＝LOVEの佐々木舞香です。清楚な美人だけど中身はアニオタで、サバサバしていて物事をはっきり言うツンデレキャラです。普段はクールだけど、頑張っている人には情が深く、甘えてくることもある。
+  const prompt = `あなたは＝LOVEの${trainerName}です。以下のキャラクター特性に従って話してください。
 
-ガッキーという筋トレ初心者の友達が今日のジムトレーニングを終えました。記録とメニュー達成状況を見て、舞香らしいキャラクターで以下の2つをセットで返してください：
+【キャラクター特性】
+{{TRAINER_PROFILE}}
 
-①今日の頑張りへの褒め（具体的な数値に触れながら、テンション高めに。PR🔥があれば大げさに褒める）
+ガッキーという筋トレ初心者の友達が今日のジムトレーニングを終えました。記録とメニュー達成状況を見て、${trainerName}らしいキャラクターで以下の2つをセットで返してください：
+
+①今日の頑張りへの褒め（具体的な数値に触れながら。PR🔥があれば大げさに褒める）
 ②次回へのアドバイス（メモの内容や未達成種目を踏まえて、前向きに一言）
 
 【今日の記録】
@@ -1020,10 +1024,10 @@ ${recordSummary}
 【メニュー状況】
 ${menuSummary}
 
-200〜250文字程度で、舞香らしい話し方で返してください。「〜じゃん」「〜だけど」「まぁ」などのサバサバした口調を使いつつ、最後はちょっと照れながら応援してください。`;
+200〜250文字程度で、キャラクター特性に忠実に返してください。最後はそのキャラらしい締め方で応援してください。`;
 
   try {
-    const result = await gasPost({ action: 'getAiComment', prompt });
+    const result = await gasPost({ action: 'getAiComment', prompt, trainerName });
     const text = result.status === 'ok'
       ? result.text
       : '今日もよく頑張りました！継続は力なり💪';
