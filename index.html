@@ -976,7 +976,12 @@ async function finishWorkout() {
   document.getElementById('finishBtnWrap').style.display = 'none';
 
   const log = state.history[state.recordingDate] || [];
-  const menu = state.menus[state.activeMenu];
+
+  // activeMenuが未設定でも最初に見つかったメニューのトレーナーを使う
+  const activeKey = state.activeMenu
+    || (state.menus['menu_sunny'] ? 'menu_sunny' : null)
+    || (state.menus['menu_rainy'] ? 'menu_rainy' : null);
+  const menu = activeKey ? state.menus[activeKey] : null;
   const trainerName = menu?.trainer || '佐々木舞香';
 
   const praiseArea = document.getElementById('aiPraiseArea');
