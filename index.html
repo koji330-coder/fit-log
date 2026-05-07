@@ -454,7 +454,7 @@
 // =============================================
 // CONFIG
 // =============================================
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxeckvau7yWk7rsg-kOL7tP2Om-XyGt-lTdh7J2IZvmNivMKT8NUGYWqwvIrO7D6bNn/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzczrBj42H-aTrjXrnNPm6Rgm7DzkHOYLNOR5L8XwqSc1KWc4GNIEQ7CLP_kESKKos/exec';
 
 // =============================================
 // MACHINES DATA
@@ -847,12 +847,20 @@ function renderToday() {
 async function deleteEntry(idx) {
   if (!confirm('この種目の記録を削除しますか？')) return;
   const date = state.recordingDate;
-  state.history[date].splice(idx, 1);
-  if (state.history[date].length === 0) delete state.history[date];
 
-  // GASに全件上書き保存
+  // 削除前に残すエントリをコピー
+  const remaining = (state.history[date] || []).filter((_, i) => i !== idx);
+
+  // ローカル状態を更新
+  if (remaining.length === 0) {
+    delete state.history[date];
+  } else {
+    state.history[date] = remaining;
+  }
+
+  // GASに残りエントリで上書き（空なら削除のみ）
   try {
-    const entries = (state.history[date] || []).map(e => ({ ...e, date }));
+    const entries = remaining.map(e => ({ ...e, date }));
     await gasPost({ action: 'saveDay', date, entries });
     showToast('🗑 削除しました');
   } catch(e) {
