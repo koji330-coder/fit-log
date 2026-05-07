@@ -640,7 +640,8 @@ let state = {
   history: {},
   menus: {},
   activeMenu: null,
-  selectedTrainer: null, // 褒めトレーナー（nullの場合はメニューのtrainerを使う）
+  selectedTrainer: null,
+  trainerList: [], // スプレッドシートから取得したトレーナー一覧
 };
 
 let calState = { year: new Date().getFullYear(), month: new Date().getMonth(), selectedDate: null };
@@ -683,6 +684,7 @@ async function init() {
     if (result.status === 'ok') {
       state.history = result.data || {};
       state.menus = result.menus || {};
+      state.trainerList = result.trainerList || [];
     } else {
       showToast('データ読み込みエラー', true);
     }
@@ -1503,24 +1505,12 @@ function downloadCSV(range) {
 // =============================================
 function renderSettings() {
   const container = document.getElementById('settingsContent');
-
-  // トレーナー一覧をスプレッドシートから取得済みのメニューに合わせて構築
-  // ＝LOVEメンバー＋オリジナルキャラ
-  const trainers = [
-    { name: '大谷映美里', tone: '明るい・やさしいお姉さん' },
-    { name: '大場花菜',   tone: '癒し系・じんわり励ます' },
-    { name: '音嶋莉沙',   tone: '上品・お姫様系' },
-    { name: '齋藤樹愛羅', tone: '元気・キラキラ・直球応援' },
-    { name: '佐々木舞香', tone: 'クール・現実的・ツンデレ' },
-    { name: '髙松瞳',     tone: '熱血・王道・牽引型' },
-    { name: '瀧脇笙古',   tone: 'まじめ・努力家・前向き' },
-    { name: '野口衣織',   tone: '分析的・文学的・クール' },
-    { name: '諸橋沙夏',   tone: '明るい・朗らか・歌姉' },
-    { name: '山本杏奈',   tone: '実直・リーダー・地に足' },
-    { name: '白石ナナ',   tone: '科学的・栄養士・丁寧' },
-  ];
-
   const currentTrainer = state.selectedTrainer;
+
+  // トレーナー一覧はスプレッドシートから取得したものを使う
+  const trainers = state.trainerList.length > 0
+    ? state.trainerList
+    : [{ name: '佐々木舞香', tone: 'クール・現実的' }]; // フォールバック
 
   let html = `
     <div class="settings-section">
