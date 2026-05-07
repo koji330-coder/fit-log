@@ -29,7 +29,6 @@
     min-height: 100vh;
     max-width: 480px;
     margin: 0 auto;
-    position: relative;
     overflow-x: hidden;
   }
 
@@ -43,781 +42,221 @@
     z-index: 0;
   }
 
+  /* LOADING OVERLAY */
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: rgba(15,15,19,0.85);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .loading-overlay.hidden { display: none; }
+  .loading-logo { font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 6px; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .loading-dots { display: flex; gap: 6px; }
+  .loading-dot { width: 10px; height: 10px; background: var(--accent); border-radius: 50%; animation: bounce 1.2s infinite; }
+  .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+  .loading-msg { font-size: 13px; color: var(--text-dim); font-weight: 700; }
+  @keyframes bounce { 0%,80%,100%{transform:translateY(0);opacity:0.5} 40%{transform:translateY(-8px);opacity:1} }
+
   /* HEADER */
   .header {
-    padding: 20px 20px 0;
+    padding: 16px 20px 12px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    position: sticky;
-    top: 0;
+    position: sticky; top: 0;
     background: rgba(15,15,19,0.95);
     backdrop-filter: blur(10px);
     z-index: 100;
-    padding-bottom: 12px;
     border-bottom: 1px solid var(--border);
   }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 4px; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+  .date-badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 12px; font-size: 12px; color: var(--text-dim); font-weight: 500; cursor: pointer; transition: border-color 0.2s; }
+  .date-badge:hover { border-color: var(--accent); }
+  .sync-btn { background: none; border: none; font-size: 18px; cursor: pointer; padding: 4px; opacity: 0.6; transition: opacity 0.2s; }
+  .sync-btn:hover { opacity: 1; }
+  .sync-btn.syncing { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-  .logo {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 28px;
-    letter-spacing: 4px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+  /* DATE PICKER MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    padding: 20px;
   }
-
-  .date-badge {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 6px 14px;
-    font-size: 12px;
-    color: var(--text-dim);
-    font-weight: 500;
+  .modal-overlay.hidden { display: none; }
+  .modal-box {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    width: 100%;
+    max-width: 340px;
   }
+  .modal-title { font-size: 15px; font-weight: 900; margin-bottom: 16px; }
+  .modal-input { background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px; color: var(--text); font-size: 16px; width: 100%; font-family: 'Noto Sans JP', sans-serif; margin-bottom: 16px; }
+  .modal-input:focus { outline: none; border-color: var(--accent); }
+  .modal-btns { display: flex; gap: 10px; }
 
   /* NAV TABS */
   .nav-tabs {
     display: flex;
-    padding: 12px 16px;
-    gap: 8px;
+    padding: 10px 12px;
+    gap: 6px;
     background: rgba(15,15,19,0.95);
     backdrop-filter: blur(10px);
-    position: sticky;
-    top: 61px;
+    position: sticky; top: 57px;
     z-index: 99;
   }
-
   .nav-tab {
     flex: 1;
-    padding: 10px 8px;
-    border-radius: 12px;
+    padding: 9px 4px;
+    border-radius: 10px;
     border: 1.5px solid var(--border);
     background: transparent;
     color: var(--text-dim);
     font-family: 'Noto Sans JP', sans-serif;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s;
     text-align: center;
   }
-
-  .nav-tab.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
-  }
+  .nav-tab.active { background: var(--accent); border-color: var(--accent); color: white; }
 
   /* SCREENS */
-  .screen { display: none; padding: 16px; }
+  .screen { display: none; padding: 16px; padding-bottom: 100px; }
   .screen.active { display: block; }
 
-  /* SECTION CARDS */
-  .section-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 13px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    margin-bottom: 12px;
-    margin-top: 8px;
+  /* RECORDING DATE BANNER */
+  .rec-date-banner {
+    background: rgba(255,140,66,0.1);
+    border: 1.5px solid rgba(255,140,66,0.3);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent2);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
+  .rec-date-banner button { background: none; border: none; color: var(--accent2); font-size: 11px; font-weight: 700; cursor: pointer; text-decoration: underline; font-family: 'Noto Sans JP', sans-serif; }
+
+  /* SECTION */
+  .section-title { font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 3px; color: var(--text-dim); margin-bottom: 12px; margin-top: 8px; }
 
   /* AREA GRID */
-  .area-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-
-  .area-btn {
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius);
-    padding: 18px 14px;
-    text-align: left;
-    cursor: pointer;
-    transition: all 0.2s;
-    color: var(--text);
-    font-family: 'Noto Sans JP', sans-serif;
-  }
-
-  .area-btn:hover, .area-btn.selected {
-    border-color: var(--accent);
-    background: rgba(255,61,107,0.08);
-  }
-
+  .area-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .area-btn { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 18px 14px; text-align: left; cursor: pointer; transition: all 0.2s; color: var(--text); font-family: 'Noto Sans JP', sans-serif; }
+  .area-btn:hover, .area-btn.selected { border-color: var(--accent); background: rgba(255,61,107,0.08); }
   .area-btn .area-icon { font-size: 24px; margin-bottom: 8px; display: block; }
   .area-btn .area-name { font-size: 13px; font-weight: 700; }
   .area-btn .area-count { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
 
   /* EXERCISE LIST */
-  .exercise-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 20px;
-  }
-
-  .exercise-item {
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .exercise-item:hover, .exercise-item.selected {
-    border-color: var(--accent);
-    background: rgba(255,61,107,0.08);
-  }
-
+  .exercise-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .exercise-item { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; }
+  .exercise-item:hover { border-color: var(--accent); background: rgba(255,61,107,0.08); }
   .exercise-item .ex-name { font-size: 14px; font-weight: 700; }
   .exercise-item .ex-part { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
   .exercise-item .ex-arrow { color: var(--text-dim); font-size: 16px; }
 
   /* SET LOGGER */
-  .set-logger {
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius);
-    padding: 20px;
-    margin-bottom: 16px;
-  }
+  .set-logger { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .set-logger-title { font-size: 16px; font-weight: 900; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .part-tag { background: rgba(255,61,107,0.2); color: var(--accent); font-size: 11px; padding: 3px 8px; border-radius: 6px; font-weight: 700; }
 
-  .set-logger-title {
-    font-size: 16px;
-    font-weight: 900;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .part-tag {
-    background: rgba(255,61,107,0.2);
-    color: var(--accent);
-    font-size: 11px;
-    padding: 3px 8px;
-    border-radius: 6px;
-    font-weight: 700;
-  }
-
-  .input-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-
-  .input-row.triple {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-
-  .input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .input-label {
-    font-size: 11px;
-    color: var(--text-dim);
-    font-weight: 700;
-    letter-spacing: 1px;
-  }
-
-  .input-field {
-    background: var(--bg);
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 14px;
-    color: var(--text);
-    font-family: 'Noto Sans JP', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    width: 100%;
-    text-align: center;
-    transition: border-color 0.2s;
-  }
-
-  .input-field:focus {
-    outline: none;
-    border-color: var(--accent);
-  }
-
-  .memo-field {
-    background: var(--bg);
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 14px;
-    color: var(--text);
-    font-family: 'Noto Sans JP', sans-serif;
-    font-size: 13px;
-    width: 100%;
-    resize: none;
-    height: 64px;
-    transition: border-color 0.2s;
-  }
-
+  .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .input-group { display: flex; flex-direction: column; gap: 6px; }
+  .input-label { font-size: 11px; color: var(--text-dim); font-weight: 700; letter-spacing: 1px; }
+  .input-field { background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-family: 'Noto Sans JP', sans-serif; font-size: 16px; font-weight: 700; width: 100%; text-align: center; transition: border-color 0.2s; }
+  .input-field:focus { outline: none; border-color: var(--accent); }
+  .memo-field { background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-family: 'Noto Sans JP', sans-serif; font-size: 13px; width: 100%; resize: none; height: 64px; transition: border-color 0.2s; }
   .memo-field:focus { outline: none; border-color: var(--accent2); }
   .memo-field::placeholder { color: var(--text-dim); }
+  .cardio-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
 
-  /* SETS LIST */
-  .sets-list {
-    margin-bottom: 12px;
-  }
-
-  .set-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-  }
-
-  .set-num {
-    background: var(--surface2);
-    border-radius: 6px;
-    width: 26px;
-    height: 26px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-dim);
-    flex-shrink: 0;
-  }
-
+  .sets-list { margin-bottom: 12px; }
+  .set-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .set-num { background: var(--surface2); border-radius: 6px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--text-dim); flex-shrink: 0; }
   .set-data { flex: 1; font-weight: 700; }
   .set-pr { color: var(--accent); font-size: 11px; }
+  .set-delete { background: none; border: none; color: var(--text-dim); font-size: 16px; cursor: pointer; padding: 4px; }
 
-  .set-delete {
-    background: none;
-    border: none;
-    color: var(--text-dim);
-    font-size: 16px;
-    cursor: pointer;
-    padding: 4px;
-  }
+  .prev-record-hint { background: rgba(6,214,160,0.08); border: 1px solid rgba(6,214,160,0.2); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: var(--success); font-weight: 700; margin-bottom: 12px; }
 
   /* BUTTONS */
-  .btn {
-    width: 100%;
-    padding: 16px;
-    border-radius: 12px;
-    border: none;
-    font-family: 'Noto Sans JP', sans-serif;
-    font-size: 14px;
-    font-weight: 900;
-    cursor: pointer;
-    transition: all 0.2s;
-    letter-spacing: 1px;
-  }
-
-  .btn-primary {
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: white;
-  }
-
+  .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-family: 'Noto Sans JP', sans-serif; font-size: 14px; font-weight: 900; cursor: pointer; transition: all 0.2s; letter-spacing: 1px; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; }
   .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1.5px solid var(--border); }
+  .btn-success { background: linear-gradient(135deg, var(--success), #0aab7c); color: white; }
+  .btn-sm { padding: 10px 16px; font-size: 13px; width: auto; }
+  .btn-row { display: flex; gap: 10px; margin-top: 12px; }
 
-  .btn-secondary {
-    background: var(--surface2);
-    color: var(--text);
-    border: 1.5px solid var(--border);
-  }
-
-  .btn-success {
-    background: linear-gradient(135deg, var(--success), #0aab7c);
-    color: white;
-  }
-
-  .btn-sm {
-    padding: 10px 16px;
-    font-size: 13px;
-    width: auto;
-  }
-
-  .btn-row {
-    display: flex;
-    gap: 10px;
-    margin-top: 12px;
-  }
+  .back-btn { background: none; border: none; color: var(--text-dim); font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 8px 0; margin-bottom: 8px; font-family: 'Noto Sans JP', sans-serif; font-weight: 700; }
+  .back-btn:hover { color: var(--text); }
 
   /* TODAY LOG */
-  .today-log {
-    margin-top: 8px;
-  }
+  .stats-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .stat-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 10px; text-align: center; }
+  .stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 28px; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; }
+  .stat-label { font-size: 10px; color: var(--text-dim); font-weight: 700; margin-top: 4px; letter-spacing: 1px; }
 
-  .log-exercise-card {
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 12px;
-  }
-
-  .log-ex-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 10px;
-  }
-
+  .log-exercise-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+  .log-ex-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
   .log-ex-name { font-size: 15px; font-weight: 900; }
   .log-ex-area { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
-
-  .log-set-line {
-    font-size: 13px;
-    padding: 4px 0;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
+  .log-set-line { font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
   .log-set-line:last-child { border-bottom: none; }
-
-  .pr-badge {
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: white;
-    font-size: 10px;
-    font-weight: 900;
-    padding: 2px 6px;
-    border-radius: 4px;
-    letter-spacing: 1px;
-  }
-
-  .log-memo {
-    margin-top: 8px;
-    padding: 8px 10px;
-    background: rgba(255,140,66,0.08);
-    border-left: 3px solid var(--accent2);
-    border-radius: 0 6px 6px 0;
-    font-size: 12px;
-    color: var(--text-dim);
-  }
-
-  /* EMPTY STATE */
-  .empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--text-dim);
-  }
-
-  .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
-  .empty-state .empty-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
-  .empty-state .empty-desc { font-size: 13px; line-height: 1.6; }
+  .pr-badge { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 4px; letter-spacing: 1px; }
+  .log-memo { margin-top: 8px; padding: 8px 10px; background: rgba(255,140,66,0.08); border-left: 3px solid var(--accent2); border-radius: 0 6px 6px 0; font-size: 12px; color: var(--text-dim); }
 
   /* AI PRAISE */
-  .ai-praise-card {
-    background: linear-gradient(135deg, rgba(255,61,107,0.1), rgba(255,140,66,0.1));
-    border: 1.5px solid rgba(255,61,107,0.3);
-    border-radius: var(--radius);
-    padding: 20px;
-    margin-bottom: 20px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .ai-praise-card::before {
-    content: '';
-    position: absolute;
-    top: -50px; right: -50px;
-    width: 150px; height: 150px;
-    background: radial-gradient(circle, rgba(255,61,107,0.15), transparent 70%);
-    pointer-events: none;
-  }
-
-  .ai-praise-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-
-  .ai-icon {
-    width: 36px; height: 36px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    flex-shrink: 0;
-  }
-
+  .ai-praise-card { background: linear-gradient(135deg, rgba(255,61,107,0.1), rgba(255,140,66,0.1)); border: 1.5px solid rgba(255,61,107,0.3); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+  .ai-praise-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .ai-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
   .ai-label { font-size: 11px; color: var(--accent); font-weight: 900; letter-spacing: 2px; }
   .ai-name { font-size: 14px; font-weight: 700; }
-
-  .ai-text {
-    font-size: 14px;
-    line-height: 1.8;
-    color: var(--text);
-  }
-
-  .ai-loading {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-    padding: 4px 0;
-  }
-
-  .dot {
-    width: 8px; height: 8px;
-    background: var(--accent);
-    border-radius: 50%;
-    animation: bounce 1.2s infinite;
-  }
-
+  .ai-text { font-size: 14px; line-height: 1.8; }
+  .ai-loading { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+  .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; animation: bounce 1.2s infinite; }
   .dot:nth-child(2) { animation-delay: 0.2s; }
   .dot:nth-child(3) { animation-delay: 0.4s; }
 
-  @keyframes bounce {
-    0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
-    40% { transform: translateY(-8px); opacity: 1; }
-  }
-
-  /* HISTORY */
-  .history-day {
-    margin-bottom: 20px;
-  }
-
-  .history-date {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 16px;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .history-date::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  .history-ex-row {
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 8px;
-  }
-
-  .history-ex-name { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
-
-  .history-sets {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .history-set-chip {
-    background: var(--surface2);
-    border-radius: 6px;
-    padding: 4px 8px;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-dim);
-  }
-
-  .history-set-chip.is-pr {
-    background: rgba(255,61,107,0.15);
-    color: var(--accent);
-    border: 1px solid rgba(255,61,107,0.3);
-  }
-
-  /* TOAST */
-  .toast {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%) translateY(100px);
-    background: var(--success);
-    color: #0a3d2e;
-    padding: 12px 24px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 700;
-    z-index: 999;
-    transition: transform 0.3s ease;
-    white-space: nowrap;
-  }
-
-  .toast.show { transform: translateX(-50%) translateY(0); }
-
-  /* STEP INDICATOR */
-  .step-indicator {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 16px;
-  }
-
-  .step-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--border);
-  }
-
-  .step-dot.done { background: var(--accent); }
-
-  .back-btn {
-    background: none;
-    border: none;
-    color: var(--text-dim);
-    font-size: 13px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 0;
-    margin-bottom: 8px;
-    font-family: 'Noto Sans JP', sans-serif;
-    font-weight: 700;
-  }
-
-  .back-btn:hover { color: var(--text); }
-
-  /* STATS BAR */
-  .stats-bar {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-
-  .stat-card {
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 10px;
-    text-align: center;
-  }
-
-  .stat-value {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 28px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    line-height: 1;
-  }
-
-  .stat-label { font-size: 10px; color: var(--text-dim); font-weight: 700; margin-top: 4px; letter-spacing: 1px; }
-
-  /* CARDIO */
-  .cardio-inputs {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-
   /* CSV BUTTONS */
-  .csv-btn-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-
-  .csv-btn {
-    flex: 1;
-    padding: 11px 10px;
-    border-radius: 10px;
-    border: 1.5px solid var(--border);
-    background: var(--surface);
-    color: var(--text-dim);
-    font-family: 'Noto Sans JP', sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
+  .csv-btn-row { display: flex; gap: 10px; margin-bottom: 16px; }
+  .csv-btn { flex: 1; padding: 11px 10px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text-dim); font-family: 'Noto Sans JP', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
   .csv-btn:hover { border-color: var(--success); color: var(--success); }
   .csv-btn-all { border-color: rgba(6,214,160,0.3); color: var(--success); }
 
-  /* COMPLETE SCREEN */
-  .complete-header {
-    background: linear-gradient(135deg, rgba(255,209,102,0.12), rgba(255,140,66,0.08));
-    border: 1.5px solid rgba(255,209,102,0.25);
-    border-radius: var(--radius);
-    padding: 20px;
-    margin-bottom: 20px;
-    text-align: center;
-  }
-
-  .complete-trophy { font-size: 40px; margin-bottom: 8px; }
-
-  .complete-progress-wrap {
-    background: var(--surface2);
-    border-radius: 20px;
-    height: 10px;
-    overflow: hidden;
-    margin: 12px 0 6px;
-  }
-
-  .complete-progress-bar {
-    height: 100%;
-    border-radius: 20px;
-    background: linear-gradient(90deg, var(--gold), var(--accent2));
-    transition: width 0.6s ease;
-  }
-
-  .complete-progress-text {
-    font-size: 12px;
-    color: var(--text-dim);
-    font-weight: 700;
-  }
-
-  .complete-count {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 36px;
-    background: linear-gradient(135deg, var(--gold), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  .complete-area-section { margin-bottom: 20px; }
-
-  .complete-area-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 13px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .complete-area-title .area-done {
-    font-size: 11px;
-    color: var(--gold);
-    font-family: 'Noto Sans JP', sans-serif;
-  }
-
-  .complete-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  .complete-ex-chip {
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 12px;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-dim);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s;
-  }
-
-  .complete-ex-chip.done {
-    border-color: var(--gold);
-    background: rgba(255,209,102,0.08);
-    color: var(--text);
-  }
-
-  .complete-ex-chip .chip-icon { font-size: 14px; flex-shrink: 0; }
-  .complete-ex-chip .chip-date { font-size: 10px; color: var(--text-dim); font-weight: 400; margin-top: 2px; }
-  .finish-btn-wrap {
-    padding: 16px;
-    position: sticky;
-    bottom: 0;
-    background: linear-gradient(to top, var(--bg) 80%, transparent);
-  }
-
-  .finish-btn {
-    width: 100%;
-    padding: 18px;
-    border-radius: 14px;
-    border: none;
-    background: linear-gradient(135deg, var(--success), #0aab7c);
-    color: white;
-    font-family: 'Noto Sans JP', sans-serif;
-    font-size: 15px;
-    font-weight: 900;
-    cursor: pointer;
-    letter-spacing: 2px;
-    transition: all 0.2s;
-  }
-
-  .finish-btn:active { transform: scale(0.98); }
+  /* HISTORY */
+  .history-day { margin-bottom: 20px; }
+  .history-date { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; color: var(--text-dim); margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+  .history-date::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .history-ex-row { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; }
+  .history-ex-name { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .history-sets { display: flex; flex-wrap: wrap; gap: 6px; }
+  .history-set-chip { background: var(--surface2); border-radius: 6px; padding: 4px 8px; font-size: 12px; font-weight: 700; color: var(--text-dim); }
+  .history-set-chip.is-pr { background: rgba(255,61,107,0.15); color: var(--accent); border: 1px solid rgba(255,61,107,0.3); }
 
   /* CALENDAR */
-  .cal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-  }
-  .cal-month {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 22px;
-    letter-spacing: 3px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  .cal-nav-btn {
-    background: var(--surface2);
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
-    color: var(--text);
-    font-size: 18px;
-    width: 36px; height: 36px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
-  }
+  .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .cal-month { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 3px; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .cal-nav-btn { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text); font-size: 18px; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
   .cal-nav-btn:hover { border-color: var(--accent); }
   .cal-stats { display: flex; gap: 10px; margin-bottom: 16px; }
-  .cal-stat {
-    flex: 1;
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    border-radius: 12px;
-    padding: 12px;
-    text-align: center;
-  }
-  .cal-stat-val {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 26px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
+  .cal-stat { flex: 1; background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px; text-align: center; }
+  .cal-stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 26px; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   .cal-stat-label { font-size: 11px; color: var(--text-dim); font-weight: 700; }
-  .streak-card {
-    background: linear-gradient(135deg, rgba(255,61,107,0.1), rgba(255,140,66,0.08));
-    border: 1.5px solid rgba(255,61,107,0.25);
-    border-radius: 12px;
-    padding: 12px 16px;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
+  .streak-card { background: linear-gradient(135deg, rgba(255,61,107,0.1), rgba(255,140,66,0.08)); border: 1.5px solid rgba(255,61,107,0.25); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; }
   .streak-fire { font-size: 28px; }
   .streak-val { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--accent); line-height: 1; }
   .streak-label { font-size: 12px; color: var(--text-dim); font-weight: 700; }
@@ -826,61 +265,87 @@
   .cal-day-label:first-child { color: #ff6b6b; }
   .cal-day-label:last-child { color: #6b9fff; }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 16px; }
-  .cal-cell {
-    aspect-ratio: 1;
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    position: relative;
-    transition: all 0.15s;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text-dim);
-  }
+  .cal-cell { aspect-ratio: 1; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: all 0.15s; font-size: 13px; font-weight: 700; color: var(--text-dim); }
   .cal-cell.empty { cursor: default; }
   .cal-cell.today { border: 2px solid var(--accent); color: var(--text); }
   .cal-cell.has-log { background: rgba(255,61,107,0.15); color: var(--text); }
   .cal-cell.has-log.selected { background: var(--accent); color: white; }
   .cal-cell:not(.empty):not(.has-log):hover { background: var(--surface2); }
   .cal-dot { width: 5px; height: 5px; background: var(--accent); border-radius: 50%; position: absolute; bottom: 4px; }
-  .cal-cell.has-log .cal-dot { background: rgba(255,255,255,0.7); }
-  .cal-cell.has-log.selected .cal-dot { background: white; }
-  .cal-detail {
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    margin-bottom: 16px;
-    animation: slideDown 0.2s ease;
-  }
-  @keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+  .cal-cell.has-log .cal-dot, .cal-cell.has-log.selected .cal-dot { background: rgba(255,255,255,0.7); }
+  .cal-detail { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; animation: slideDown 0.2s ease; }
+  @keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
   .cal-detail-date { background: var(--accent); padding: 10px 16px; font-size: 13px; font-weight: 900; }
   .cal-detail-body { padding: 12px 16px; }
   .cal-detail-ex { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
   .cal-detail-ex:last-child { border-bottom: none; }
   .cal-detail-ex-name { font-weight: 700; margin-bottom: 4px; }
   .cal-detail-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-  /* PREV RECORD HINT */
-  .prev-record-hint {
-    background: rgba(6,214,160,0.08);
-    border: 1px solid rgba(6,214,160,0.2);
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 12px;
-    color: var(--success);
-    font-weight: 700;
-    margin-bottom: 12px;
-  }
+
+  /* COMPLETE */
+  .complete-header { background: linear-gradient(135deg, rgba(255,209,102,0.12), rgba(255,140,66,0.08)); border: 1.5px solid rgba(255,209,102,0.25); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; text-align: center; }
+  .complete-trophy { font-size: 40px; margin-bottom: 8px; }
+  .complete-progress-wrap { background: var(--surface2); border-radius: 20px; height: 10px; overflow: hidden; margin: 12px 0 6px; }
+  .complete-progress-bar { height: 100%; border-radius: 20px; background: linear-gradient(90deg, var(--gold), var(--accent2)); transition: width 0.6s ease; }
+  .complete-progress-text { font-size: 12px; color: var(--text-dim); font-weight: 700; }
+  .complete-count { font-family: 'Bebas Neue', sans-serif; font-size: 36px; background: linear-gradient(135deg, var(--gold), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .complete-area-section { margin-bottom: 20px; }
+  .complete-area-title { font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 3px; color: var(--text-dim); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .complete-area-title .area-done { font-size: 11px; color: var(--gold); font-family: 'Noto Sans JP', sans-serif; }
+  .complete-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .complete-ex-chip { background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 12px; font-weight: 700; color: var(--text-dim); display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+  .complete-ex-chip.done { border-color: var(--gold); background: rgba(255,209,102,0.08); color: var(--text); }
+  .complete-ex-chip .chip-icon { font-size: 14px; flex-shrink: 0; }
+  .complete-ex-chip .chip-date { font-size: 10px; color: var(--text-dim); font-weight: 400; margin-top: 2px; }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state .empty-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+  .empty-state .empty-desc { font-size: 13px; line-height: 1.6; }
+
+  /* FINISH BUTTON */
+  .finish-btn-wrap { padding: 16px; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: linear-gradient(to top, var(--bg) 80%, transparent); }
+  .finish-btn { width: 100%; padding: 18px; border-radius: 14px; border: none; background: linear-gradient(135deg, var(--success), #0aab7c); color: white; font-family: 'Noto Sans JP', sans-serif; font-size: 15px; font-weight: 900; cursor: pointer; letter-spacing: 2px; transition: all 0.2s; }
+  .finish-btn:active { transform: scale(0.98); }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--success); color: #0a3d2e; padding: 12px 24px; border-radius: 20px; font-size: 13px; font-weight: 700; z-index: 999; transition: transform 0.3s ease; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--accent); color: white; }
 </style>
 </head>
 <body>
 
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-logo">FIT LOG</div>
+  <div class="loading-dots">
+    <div class="loading-dot"></div>
+    <div class="loading-dot"></div>
+    <div class="loading-dot"></div>
+  </div>
+  <div class="loading-msg">データを読み込み中...</div>
+</div>
+
+<!-- DATE PICKER MODAL -->
+<div class="modal-overlay hidden" id="dateModal">
+  <div class="modal-box">
+    <div class="modal-title">📅 記録する日付を選択</div>
+    <input type="date" class="modal-input" id="dateInput">
+    <div class="modal-btns">
+      <button class="btn btn-secondary btn-sm" onclick="closeDateModal()">キャンセル</button>
+      <button class="btn btn-primary btn-sm" onclick="applyDate()">決定</button>
+    </div>
+  </div>
+</div>
+
 <div class="header">
   <div class="logo">FIT LOG</div>
-  <div class="date-badge" id="headerDate"></div>
+  <div class="header-right">
+    <button class="sync-btn" onclick="syncData()" id="syncBtn" title="データ同期">🔄</button>
+    <div class="date-badge" id="headerDate" onclick="openDateModal()"></div>
+  </div>
 </div>
 
 <div class="nav-tabs">
@@ -893,20 +358,19 @@
 
 <!-- RECORD SCREEN -->
 <div class="screen active" id="screen-record">
-  <!-- Step 1: Area Select -->
   <div id="step-area">
+    <div id="recDateBanner" class="rec-date-banner" style="display:none">
+      📅 <span id="recDateLabel"></span>に記録中
+      <button onclick="openDateModal()">日付を変更</button>
+    </div>
     <div class="section-title">AREA SELECT</div>
     <div class="area-grid" id="areaGrid"></div>
   </div>
-
-  <!-- Step 2: Exercise Select -->
   <div id="step-exercise" style="display:none">
     <button class="back-btn" onclick="goBack('area')">← エリア選択に戻る</button>
     <div class="section-title" id="stepExTitle">EXERCISE SELECT</div>
     <div class="exercise-list" id="exerciseList"></div>
   </div>
-
-  <!-- Step 3: Set Logger -->
   <div id="step-set" style="display:none">
     <button class="back-btn" onclick="goBack('exercise')">← 種目選択に戻る</button>
     <div class="set-logger">
@@ -914,8 +378,6 @@
         <span id="loggerExName">種目名</span>
         <span class="part-tag" id="loggerPartTag"></span>
       </div>
-
-      <!-- Cardio inputs -->
       <div id="cardioInputs" style="display:none">
         <div class="cardio-inputs">
           <div class="input-group">
@@ -932,8 +394,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Strength inputs -->
       <div id="strengthInputs">
         <div class="input-row">
           <div class="input-group">
@@ -946,17 +406,12 @@
           </div>
         </div>
       </div>
-
-      <!-- Sets list -->
       <div class="sets-list" id="setsList"></div>
-
-      <!-- Memo -->
       <div id="prevRecordHint" class="prev-record-hint" style="display:none"></div>
       <div class="input-group" style="margin-bottom:12px">
         <div class="input-label">メモ（任意）</div>
         <textarea class="memo-field" id="inputMemo" placeholder="フォームが崩れた、次は重量下げるなど…"></textarea>
       </div>
-
       <div class="btn-row">
         <button class="btn btn-secondary btn-sm" onclick="addSet()" id="addSetBtn">＋ セット追加</button>
         <button class="btn btn-primary btn-sm" onclick="saveExercise()">この種目を保存</button>
@@ -980,17 +435,11 @@
   <div id="calendarContent"></div>
 </div>
 
-<!-- HISTORY SCREEN -->
-<div class="screen" id="screen-history">
-  <div id="historyContent"></div>
-</div>
-
 <!-- COMPLETE SCREEN -->
 <div class="screen" id="screen-complete">
   <div id="completeContent"></div>
 </div>
 
-<!-- Finish Button (shown when there's data) -->
 <div class="finish-btn-wrap" id="finishBtnWrap" style="display:none">
   <button class="finish-btn" onclick="finishWorkout()">🏁 トレーニング完了！</button>
 </div>
@@ -998,14 +447,17 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// =====================
-// DATA
-// =====================
+// =============================================
+// CONFIG
+// =============================================
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzA6fu4nfLg-0L0LcxRbUCYiorHLE8z7gI9BU1Mbo4HmvsH98JnFlDaYSJHF26bilE/exec';
+
+// =============================================
+// MACHINES DATA
+// =============================================
 const MACHINES = {
   cardio: {
-    name: '有酸素マシン',
-    icon: '🏃',
-    type: 'cardio',
+    name: '有酸素マシン', icon: '🏃', type: 'cardio',
     exercises: [
       { name: 'ランニングマシン', part: '全身' },
       { name: 'クロストレーナー', part: '全身' },
@@ -1015,87 +467,61 @@ const MACHINES = {
     ]
   },
   machine: {
-    name: '筋トレマシン',
-    icon: '🔧',
-    type: 'strength',
+    name: '筋トレマシン', icon: '🔧', type: 'strength',
     exercises: [
-      { name: 'ラテラルレイズ', part: '肩' },
-      { name: 'ショルダープレス', part: '肩' },
-      { name: 'リアデルトフライ', part: '肩' },
-      { name: 'チェストプレス', part: '胸' },
-      { name: 'ラットプルダウン', part: '背中' },
-      { name: 'シーテッドロー', part: '背中' },
-      { name: 'ディップ・チンアシスト', part: '背中/胸' },
-      { name: '8スタックマルチステーション', part: '全身' },
-      { name: 'アームカール', part: '腕' },
-      { name: 'アブドミナル', part: '腹' },
-      { name: 'ロータリートルソー', part: '腹' },
-      { name: 'レッグプレス', part: '脚' },
-      { name: 'プローンレッグカール', part: '脚' },
-      { name: 'レッグエクステンション', part: '脚' },
-      { name: 'インナー・アウターサイ', part: '脚' },
-      { name: 'カーフプレス', part: 'ふくらはぎ' },
+      { name: 'ラテラルレイズ', part: '肩' }, { name: 'ショルダープレス', part: '肩' },
+      { name: 'リアデルトフライ', part: '肩' }, { name: 'チェストプレス', part: '胸' },
+      { name: 'ラットプルダウン', part: '背中' }, { name: 'シーテッドロー', part: '背中' },
+      { name: 'ディップ・チンアシスト', part: '背中/胸' }, { name: '8スタックマルチステーション', part: '全身' },
+      { name: 'アームカール', part: '腕' }, { name: 'アブドミナル', part: '腹' },
+      { name: 'ロータリートルソー', part: '腹' }, { name: 'レッグプレス', part: '脚' },
+      { name: 'プローンレッグカール', part: '脚' }, { name: 'レッグエクステンション', part: '脚' },
+      { name: 'インナー・アウターサイ', part: '脚' }, { name: 'カーフプレス', part: 'ふくらはぎ' },
     ]
   },
   free: {
-    name: 'フリーウエイト',
-    icon: '🏋️',
-    type: 'strength',
+    name: 'フリーウエイト', icon: '🏋️', type: 'strength',
     exercises: [
-      { name: 'パワーラック', part: '全身' },
-      { name: 'ベンチプレス', part: '胸' },
-      { name: 'スミスマシン', part: '全身' },
-      { name: 'アームカールベンチ', part: '腕' },
-      { name: 'アジャスタブルベンチ', part: '全身' },
-      { name: 'ダンベル', part: '全身' },
+      { name: 'パワーラック', part: '全身' }, { name: 'ベンチプレス', part: '胸' },
+      { name: 'スミスマシン', part: '全身' }, { name: 'アームカールベンチ', part: '腕' },
+      { name: 'アジャスタブルベンチ', part: '全身' }, { name: 'ダンベル', part: '全身' },
       { name: 'EZバー', part: '腕' },
     ]
   },
   plate: {
-    name: 'プレートロード',
-    icon: '⚡',
-    type: 'strength',
+    name: 'プレートロード', icon: '⚡', type: 'strength',
     exercises: [
-      { name: 'ワイドチェスト', part: '胸' },
-      { name: 'インクラインプレス', part: '胸' },
-      { name: 'ショルダープレス(PL)', part: '肩' },
-      { name: '45度レッグプレス', part: '脚' },
-      { name: 'リーダーナブラ', part: '背中' },
-      { name: 'ハイロウ', part: '背中' },
-      { name: 'レベルロウ', part: '背中' },
-      { name: 'ロウイング', part: '背中' },
-      { name: 'ラテラルレイズ/リアデルトイド', part: '肩' },
-      { name: 'ハックスクワット', part: '脚' },
+      { name: 'ワイドチェスト', part: '胸' }, { name: 'インクラインプレス', part: '胸' },
+      { name: 'ショルダープレス(PL)', part: '肩' }, { name: '45度レッグプレス', part: '脚' },
+      { name: 'リーダーナブラ', part: '背中' }, { name: 'ハイロウ', part: '背中' },
+      { name: 'レベルロウ', part: '背中' }, { name: 'ロウイング', part: '背中' },
+      { name: 'ラテラルレイズ/リアデルトイド', part: '肩' }, { name: 'ハックスクワット', part: '脚' },
       { name: 'インクラインレバーロウ', part: '背中' },
     ]
   },
   functional: {
-    name: 'ファンクショナル',
-    icon: '🤸',
-    type: 'strength',
+    name: 'ファンクショナル', icon: '🤸', type: 'strength',
     exercises: [
-      { name: 'バックエクステンション', part: '背中' },
-      { name: '腹筋ベンチ', part: '腹' },
-      { name: 'ケーブル', part: '全身' },
-      { name: 'ファンクショナルラック', part: '全身' },
-      { name: 'ケトルベル', part: '全身' },
-      { name: 'サンドバック', part: '全身' },
-      { name: 'パワーバッグ', part: '全身' },
-      { name: 'プライオボックス', part: '脚' },
+      { name: 'バックエクステンション', part: '背中' }, { name: '腹筋ベンチ', part: '腹' },
+      { name: 'ケーブル', part: '全身' }, { name: 'ファンクショナルラック', part: '全身' },
+      { name: 'ケトルベル', part: '全身' }, { name: 'サンドバック', part: '全身' },
+      { name: 'パワーバッグ', part: '全身' }, { name: 'プライオボックス', part: '脚' },
     ]
   }
 };
 
-// =====================
+// =============================================
 // STATE
-// =====================
+// =============================================
 let state = {
+  recordingDate: getTodayStr(),
   selectedArea: null,
   selectedExercise: null,
   currentSets: [],
-  todayLog: [],
-  currentDate: getTodayStr(),
+  history: {}, // { 'YYYY-MM-DD': [entry, ...] }
 };
+
+let calState = { year: new Date().getFullYear(), month: new Date().getMonth(), selectedDate: null };
 
 function getTodayStr() {
   const d = new Date();
@@ -1103,102 +529,122 @@ function getTodayStr() {
 }
 
 function formatDate(str) {
-  const d = new Date(str);
+  if (!str) return '';
+  const d = new Date(str + 'T00:00:00');
   const days = ['日','月','火','水','木','金','土'];
   return `${d.getMonth()+1}/${d.getDate()}（${days[d.getDay()]}）`;
 }
 
-// =====================
-// STORAGE
-// =====================
-function getStorage() {
+// =============================================
+// GAS API
+// =============================================
+async function gasGet(params) {
+  const url = GAS_URL + '?' + new URLSearchParams(params);
+  const res = await fetch(url);
+  return res.json();
+}
+
+async function gasPost(body) {
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+// =============================================
+// INIT - Load all data from GAS
+// =============================================
+async function init() {
   try {
-    const data = localStorage.getItem('fitlog_v1');
-    return data ? JSON.parse(data) : {};
-  } catch(e) { return {}; }
+    const result = await gasGet({ action: 'getAll' });
+    if (result.status === 'ok') {
+      state.history = result.data || {};
+    } else {
+      showToast('データ読み込みエラー', true);
+    }
+  } catch(e) {
+    showToast('通信エラー: オフラインの可能性があります', true);
+  }
+  document.getElementById('loadingOverlay').classList.add('hidden');
+  updateHeaderDate();
+  updateRecDateBanner();
+  renderAreas();
 }
 
-function saveStorage(key, val) {
+async function syncData() {
+  const btn = document.getElementById('syncBtn');
+  btn.classList.add('syncing');
   try {
-    const data = getStorage();
-    data[key] = val;
-    localStorage.setItem('fitlog_v1', JSON.stringify(data));
-  } catch(e) {}
-}
-
-function getHistory() {
-  const data = getStorage();
-  return data.history || {};
-}
-
-function saveTodayLog() {
-  const history = getHistory();
-  history[state.currentDate] = state.todayLog;
-  saveStorage('history', history);
-}
-
-// PR CHECK: returns true if this set is better than any previous
-function checkPR(exName, weight, reps) {
-  const history = getHistory();
-  let bestVol = 0;
-  for (const [date, log] of Object.entries(history)) {
-    if (date === state.currentDate) continue;
-    for (const entry of log) {
-      if (entry.name !== exName) continue;
-      for (const s of (entry.sets || [])) {
-        bestVol = Math.max(bestVol, (s.weight || 0) * (s.reps || 0));
+    const result = await gasGet({ action: 'getAll' });
+    if (result.status === 'ok') {
+      state.history = result.data || {};
+      showToast('✅ 同期完了');
+      // Re-render current screen
+      const active = document.querySelector('.screen.active');
+      if (active) {
+        const name = active.id.replace('screen-', '');
+        if (name === 'today') renderToday();
+        if (name === 'history') renderHistory();
+        if (name === 'calendar') renderCalendar();
+        if (name === 'complete') renderComplete();
       }
     }
+  } catch(e) {
+    showToast('同期失敗', true);
   }
-  return bestVol > 0 && weight * reps > bestVol;
+  btn.classList.remove('syncing');
 }
 
-// =====================
-// INIT
-// =====================
-document.getElementById('headerDate').textContent = formatDate(state.currentDate);
-
-// Load today's log if exists
-const savedHistory = getHistory();
-if (savedHistory[state.currentDate]) {
-  state.todayLog = savedHistory[state.currentDate];
+// =============================================
+// DATE HANDLING
+// =============================================
+function updateHeaderDate() {
+  document.getElementById('headerDate').textContent = formatDate(state.recordingDate);
 }
 
-// =====================
-// RENDER AREAS
-// =====================
-function renderAreas() {
-  const grid = document.getElementById('areaGrid');
-  grid.innerHTML = '';
-  for (const [key, area] of Object.entries(MACHINES)) {
-    const btn = document.createElement('button');
-    btn.className = 'area-btn';
-    btn.innerHTML = `
-      <span class="area-icon">${area.icon}</span>
-      <div class="area-name">${area.name}</div>
-      <div class="area-count">${area.exercises.length}種目</div>
-    `;
-    btn.onclick = () => selectArea(key);
-    grid.appendChild(btn);
+function updateRecDateBanner() {
+  const banner = document.getElementById('recDateBanner');
+  const label = document.getElementById('recDateLabel');
+  if (state.recordingDate !== getTodayStr()) {
+    banner.style.display = 'flex';
+    label.textContent = formatDate(state.recordingDate);
+  } else {
+    banner.style.display = 'none';
   }
 }
 
-renderAreas();
+function openDateModal() {
+  document.getElementById('dateInput').value = state.recordingDate;
+  document.getElementById('dateModal').classList.remove('hidden');
+}
 
-// =====================
+function closeDateModal() {
+  document.getElementById('dateModal').classList.add('hidden');
+}
+
+function applyDate() {
+  const val = document.getElementById('dateInput').value;
+  if (val) {
+    state.recordingDate = val;
+    updateHeaderDate();
+    updateRecDateBanner();
+  }
+  closeDateModal();
+}
+
+// =============================================
 // NAVIGATION
-// =====================
+// =============================================
 function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('screen-' + name).classList.add('active');
   event.target.classList.add('active');
-
   if (name === 'today') renderToday();
   if (name === 'history') renderHistory();
   if (name === 'calendar') renderCalendar();
   if (name === 'complete') renderComplete();
-
   updateFinishBtn();
 }
 
@@ -1215,25 +661,33 @@ function goBack(to) {
   }
 }
 
+// =============================================
+// AREA & EXERCISE SELECT
+// =============================================
+function renderAreas() {
+  const grid = document.getElementById('areaGrid');
+  grid.innerHTML = '';
+  for (const [key, area] of Object.entries(MACHINES)) {
+    const btn = document.createElement('button');
+    btn.className = 'area-btn';
+    btn.innerHTML = `<span class="area-icon">${area.icon}</span><div class="area-name">${area.name}</div><div class="area-count">${area.exercises.length}種目</div>`;
+    btn.onclick = () => selectArea(key);
+    grid.appendChild(btn);
+  }
+}
+
 function selectArea(key) {
   state.selectedArea = key;
   const area = MACHINES[key];
   document.getElementById('step-area').style.display = 'none';
   document.getElementById('step-exercise').style.display = 'block';
   document.getElementById('stepExTitle').textContent = area.name.toUpperCase();
-
   const list = document.getElementById('exerciseList');
   list.innerHTML = '';
   for (const ex of area.exercises) {
     const item = document.createElement('div');
     item.className = 'exercise-item';
-    item.innerHTML = `
-      <div>
-        <div class="ex-name">${ex.name}</div>
-        <div class="ex-part">${ex.part}</div>
-      </div>
-      <div class="ex-arrow">›</div>
-    `;
+    item.innerHTML = `<div><div class="ex-name">${ex.name}</div><div class="ex-part">${ex.part}</div></div><div class="ex-arrow">›</div>`;
     item.onclick = () => selectExercise(ex, area.type);
     list.appendChild(item);
   }
@@ -1245,7 +699,7 @@ function selectExercise(ex, type) {
   document.getElementById('step-exercise').style.display = 'none';
   document.getElementById('step-set').style.display = 'block';
   document.getElementById('loggerExName').textContent = ex.name;
-  document.getElementById('loggerPartTag').textContent = ex.part;
+  document.getElementById('loggerPartTag').textContent = ex.part || '';
   document.getElementById('inputMemo').value = '';
 
   const isCardio = type === 'cardio';
@@ -1253,38 +707,27 @@ function selectExercise(ex, type) {
   document.getElementById('strengthInputs').style.display = isCardio ? 'none' : 'block';
   document.getElementById('addSetBtn').style.display = isCardio ? 'none' : 'inline-block';
 
-  // Show previous record hint
   const hint = document.getElementById('prevRecordHint');
   if (!isCardio) {
     const prev = getPrevRecord(ex.name);
-    if (prev) {
-      hint.style.display = 'block';
-      hint.textContent = `📊 前回: ${prev}`;
-    } else {
-      hint.style.display = 'none';
-    }
+    if (prev) { hint.style.display = 'block'; hint.textContent = `📊 前回: ${prev}`; }
+    else { hint.style.display = 'none'; }
   } else {
     hint.style.display = 'none';
   }
-
   renderSets();
 }
 
-// =====================
+// =============================================
 // SET MANAGEMENT
-// =====================
+// =============================================
 function addSet() {
   const weight = parseFloat(document.getElementById('inputWeight').value);
   const reps = parseInt(document.getElementById('inputReps').value);
-
-  if (!weight || !reps) {
-    showToast('重量と回数を入力してください');
-    return;
-  }
-
+  if (!weight || !reps) { showToast('重量と回数を入力してください'); return; }
   const isPR = checkPR(state.selectedExercise.name, weight, reps);
   state.currentSets.push({ weight, reps, isPR });
-  document.getElementById('inputWeight').value = weight; // keep weight
+  document.getElementById('inputWeight').value = weight;
   document.getElementById('inputReps').value = '';
   renderSets();
 }
@@ -1300,100 +743,71 @@ function renderSets() {
   state.currentSets.forEach((s, i) => {
     const row = document.createElement('div');
     row.className = 'set-row';
-    row.innerHTML = `
-      <div class="set-num">${i+1}</div>
-      <div class="set-data">${s.weight}kg × ${s.reps}回 ${s.isPR ? '<span class="set-pr">🔥PR</span>' : ''}</div>
-      <button class="set-delete" onclick="deleteSet(${i})">×</button>
-    `;
+    row.innerHTML = `<div class="set-num">${i+1}</div><div class="set-data">${s.weight}kg × ${s.reps}回 ${s.isPR ? '<span class="set-pr">🔥PR</span>' : ''}</div><button class="set-delete" onclick="deleteSet(${i})">×</button>`;
     list.appendChild(row);
   });
 }
 
-function saveExercise() {
+// =============================================
+// SAVE EXERCISE → GAS
+// =============================================
+async function saveExercise() {
   const isCardio = MACHINES[state.selectedArea]?.type === 'cardio';
   const memo = document.getElementById('inputMemo').value.trim();
-
   let entry;
+
   if (isCardio) {
     const time = document.getElementById('cardioTime').value;
     const dist = document.getElementById('cardioDist').value;
     const level = document.getElementById('cardioLevel').value;
     if (!time && !dist) { showToast('時間か距離を入力してください'); return; }
-    entry = {
-      name: state.selectedExercise.name,
-      area: MACHINES[state.selectedArea].name,
-      type: 'cardio',
-      time: time || null,
-      dist: dist || null,
-      level: level || null,
-      memo,
-    };
+    entry = { date: state.recordingDate, name: state.selectedExercise.name, area: MACHINES[state.selectedArea].name, type: 'cardio', time: time||null, dist: dist||null, level: level||null, memo };
   } else {
     if (state.currentSets.length === 0) { showToast('セットを追加してください'); return; }
-    entry = {
-      name: state.selectedExercise.name,
-      area: MACHINES[state.selectedArea].name,
-      part: state.selectedExercise.part,
-      type: 'strength',
-      sets: state.currentSets,
-      memo,
-    };
+    entry = { date: state.recordingDate, name: state.selectedExercise.name, area: MACHINES[state.selectedArea].name, part: state.selectedExercise.part, type: 'strength', sets: state.currentSets, memo };
   }
 
-  state.todayLog.push(entry);
-  saveTodayLog();
-  showToast('✅ 保存しました！');
-  updateFinishBtn();
+  // Update local state immediately
+  if (!state.history[state.recordingDate]) state.history[state.recordingDate] = [];
+  state.history[state.recordingDate].push(entry);
 
-  // Back to area select
+  // Send to GAS
+  try {
+    await gasPost({ action: 'save', entries: [entry] });
+    showToast('✅ 保存しました！');
+  } catch(e) {
+    showToast('⚠️ 保存失敗（通信エラー）', true);
+  }
+
+  updateFinishBtn();
   state.currentSets = [];
   document.getElementById('step-set').style.display = 'none';
   document.getElementById('step-exercise').style.display = 'none';
   document.getElementById('step-area').style.display = 'block';
 }
 
-// =====================
+// =============================================
 // TODAY SCREEN
-// =====================
+// =============================================
 function renderToday() {
   const container = document.getElementById('todayContent');
+  const log = state.history[state.recordingDate] || [];
+  const dateLabel = state.recordingDate === getTodayStr() ? '今日' : formatDate(state.recordingDate);
 
-  if (state.todayLog.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">💪</div>
-        <div class="empty-title">今日はまだ記録なし</div>
-        <div class="empty-desc">「記録」タブから<br>トレーニングを追加しよう！</div>
-      </div>
-    `;
+  if (log.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">💪</div><div class="empty-title">${dateLabel}はまだ記録なし</div><div class="empty-desc">「記録」タブからトレーニングを追加しよう！</div></div>`;
     return;
   }
 
-  // Stats
-  const totalSets = state.todayLog.reduce((a, e) => a + (e.sets?.length || 0), 0);
-  const totalVol = state.todayLog.reduce((a, e) => {
-    if (!e.sets) return a;
-    return a + e.sets.reduce((b, s) => b + s.weight * s.reps, 0);
-  }, 0);
-  const prCount = state.todayLog.reduce((a, e) => {
-    if (!e.sets) return a;
-    return a + e.sets.filter(s => s.isPR).length;
-  }, 0);
+  const totalSets = log.reduce((a, e) => a + (e.sets?.length || 0), 0);
+  const totalVol = log.reduce((a, e) => { if (!e.sets) return a; return a + e.sets.reduce((b, s) => b + s.weight * s.reps, 0); }, 0);
+  const prCount = log.reduce((a, e) => { if (!e.sets) return a; return a + e.sets.filter(s => s.isPR).length; }, 0);
 
   let html = `
     <div class="stats-bar">
-      <div class="stat-card">
-        <div class="stat-value">${state.todayLog.length}</div>
-        <div class="stat-label">種目</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">${totalSets}</div>
-        <div class="stat-label">総セット</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">${prCount > 0 ? '🔥'+prCount : totalVol > 1000 ? Math.round(totalVol/1000)+'t' : totalVol+'kg'}</div>
-        <div class="stat-label">${prCount > 0 ? 'PR達成' : '総ボリューム'}</div>
-      </div>
+      <div class="stat-card"><div class="stat-value">${log.length}</div><div class="stat-label">種目</div></div>
+      <div class="stat-card"><div class="stat-value">${totalSets}</div><div class="stat-label">総セット</div></div>
+      <div class="stat-card"><div class="stat-value">${prCount > 0 ? '🔥'+prCount : totalVol > 1000 ? Math.round(totalVol/1000)+'t' : totalVol+'kg'}</div><div class="stat-label">${prCount > 0 ? 'PR達成' : '総ボリューム'}</div></div>
     </div>
     <div class="csv-btn-row">
       <button class="csv-btn" onclick="downloadCSV('today')">📥 今日分CSV</button>
@@ -1403,15 +817,8 @@ function renderToday() {
     <div class="today-log">
   `;
 
-  for (const entry of state.todayLog) {
-    html += `<div class="log-exercise-card">
-      <div class="log-ex-header">
-        <div>
-          <div class="log-ex-name">${entry.name}</div>
-          <div class="log-ex-area">${entry.area}</div>
-        </div>
-      </div>`;
-
+  for (const entry of log) {
+    html += `<div class="log-exercise-card"><div class="log-ex-header"><div><div class="log-ex-name">${entry.name}</div><div class="log-ex-area">${entry.area}</div></div></div>`;
     if (entry.type === 'cardio') {
       const parts = [];
       if (entry.time) parts.push(`⏱ ${entry.time}分`);
@@ -1419,66 +826,37 @@ function renderToday() {
       if (entry.level) parts.push(`Lv.${entry.level}`);
       html += `<div class="log-set-line" style="font-weight:700">${parts.join('　')}</div>`;
     } else {
-      entry.sets.forEach((s, i) => {
-        html += `<div class="log-set-line">
-          <div class="set-num">${i+1}</div>
-          <div style="flex:1;font-weight:700">${s.weight}kg × ${s.reps}回</div>
-          ${s.isPR ? '<span class="pr-badge">🔥 PR</span>' : ''}
-        </div>`;
+      (entry.sets || []).forEach((s, i) => {
+        html += `<div class="log-set-line"><div class="set-num">${i+1}</div><div style="flex:1;font-weight:700">${s.weight}kg × ${s.reps}回</div>${s.isPR ? '<span class="pr-badge">🔥 PR</span>' : ''}</div>`;
       });
     }
-
-    if (entry.memo) {
-      html += `<div class="log-memo">📝 ${entry.memo}</div>`;
-    }
-
+    if (entry.memo) html += `<div class="log-memo">📝 ${entry.memo}</div>`;
     html += '</div>';
   }
-
   html += '</div>';
   container.innerHTML = html;
 }
 
-// =====================
+// =============================================
 // FINISH + AI PRAISE
-// =====================
+// =============================================
 function updateFinishBtn() {
   const wrap = document.getElementById('finishBtnWrap');
+  const log = state.history[state.recordingDate] || [];
   const screen = document.querySelector('.screen.active');
-  wrap.style.display = (state.todayLog.length > 0 && screen?.id === 'screen-today') ? 'block' : 'none';
+  wrap.style.display = (log.length > 0 && screen?.id === 'screen-today') ? 'block' : 'none';
 }
 
 async function finishWorkout() {
-  // Scroll to top of today
-  document.getElementById('aiPraiseArea').scrollIntoView({ behavior: 'smooth' });
   document.getElementById('finishBtnWrap').style.display = 'none';
-
   const praiseArea = document.getElementById('aiPraiseArea');
-  praiseArea.innerHTML = `
-    <div class="ai-praise-card">
-      <div class="ai-praise-header">
-        <div class="ai-icon">🤖</div>
-        <div>
-          <div class="ai-label">AI TRAINER</div>
-          <div class="ai-name">Claudeより</div>
-        </div>
-      </div>
-      <div class="ai-loading">
-        <div class="dot"></div>
-        <div class="dot"></div>
-        <div class="dot"></div>
-      </div>
-    </div>
-  `;
+  praiseArea.innerHTML = `<div class="ai-praise-card"><div class="ai-praise-header"><div class="ai-icon">🤖</div><div><div class="ai-label">AI TRAINER</div><div class="ai-name">Claudeより</div></div></div><div class="ai-loading"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+  praiseArea.scrollIntoView({ behavior: 'smooth' });
 
-  // Build summary for AI
-  const summary = state.todayLog.map(e => {
-    if (e.type === 'cardio') {
-      return `${e.name}: ${e.time ? e.time+'分' : ''}${e.dist ? ' '+e.dist+'km' : ''}${e.level ? ' Lv.'+e.level : ''}`;
-    } else {
-      const setStr = e.sets.map((s,i) => `セット${i+1}: ${s.weight}kg×${s.reps}回${s.isPR?' (PR🔥)':''}`).join(', ');
-      return `${e.name}(${e.part}): ${setStr}${e.memo ? ' メモ:'+e.memo : ''}`;
-    }
+  const log = state.history[state.recordingDate] || [];
+  const summary = log.map(e => {
+    if (e.type === 'cardio') return `${e.name}: ${e.time?e.time+'分':''} ${e.dist?e.dist+'km':''} ${e.level?'Lv.'+e.level:''}`;
+    return `${e.name}(${e.part}): ${(e.sets||[]).map((s,i)=>`セット${i+1}: ${s.weight}kg×${s.reps}回${s.isPR?' (PR🔥)':''}`).join(', ')}${e.memo?' メモ:'+e.memo:''}`;
   }).join('\n');
 
   try {
@@ -1488,82 +866,37 @@ async function finishWorkout() {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: `あなたは熱血かつ優しいパーソナルトレーナーです。以下のトレーニング記録を見て、日本語で褒めてください。
-具体的な数値（種目名、重量、回数など）に言及しながら、200文字程度で、テンション高めに励ましてください。
-PRが出ていたら特に大げさに褒めてください。メモに失敗の記録があれば、次回への前向きなアドバイスも一言添えてください。
-
-今日のトレーニング記録：
-${summary}`
-        }]
+        messages: [{ role: 'user', content: `あなたは熱血かつ優しいパーソナルトレーナーです。以下のトレーニング記録を見て、日本語で褒めてください。具体的な数値（種目名、重量、回数など）に言及しながら、200文字程度で、テンション高めに励ましてください。PRが出ていたら特に大げさに褒めてください。メモに失敗の記録があれば、次回への前向きなアドバイスも一言添えてください。\n\n今日のトレーニング記録：\n${summary}` }]
       })
     });
-
     const data = await res.json();
     const text = data.content?.[0]?.text || 'お疲れ様でした！すごく頑張りましたね💪';
-
-    praiseArea.innerHTML = `
-      <div class="ai-praise-card">
-        <div class="ai-praise-header">
-          <div class="ai-icon">🤖</div>
-          <div>
-            <div class="ai-label">AI TRAINER</div>
-            <div class="ai-name">Claudeより</div>
-          </div>
-        </div>
-        <div class="ai-text">${text.replace(/\n/g, '<br>')}</div>
-      </div>
-    `;
+    praiseArea.innerHTML = `<div class="ai-praise-card"><div class="ai-praise-header"><div class="ai-icon">🤖</div><div><div class="ai-label">AI TRAINER</div><div class="ai-name">Claudeより</div></div></div><div class="ai-text">${text.replace(/\n/g,'<br>')}</div></div>`;
   } catch(e) {
-    praiseArea.innerHTML = `
-      <div class="ai-praise-card">
-        <div class="ai-praise-header">
-          <div class="ai-icon">🤖</div>
-          <div><div class="ai-label">AI TRAINER</div></div>
-        </div>
-        <div class="ai-text">今日もよく頑張りました！継続は力なり💪 次のトレーニングも楽しみにしています！</div>
-      </div>
-    `;
+    praiseArea.innerHTML = `<div class="ai-praise-card"><div class="ai-praise-header"><div class="ai-icon">🤖</div><div><div class="ai-label">AI TRAINER</div></div></div><div class="ai-text">今日もよく頑張りました！継続は力なり💪</div></div>`;
   }
 }
 
-// =====================
+// =============================================
 // HISTORY SCREEN
-// =====================
+// =============================================
 function renderHistory() {
   const container = document.getElementById('historyContent');
-  const history = getHistory();
-  const dates = Object.keys(history).sort((a,b) => b.localeCompare(a));
+  const dates = Object.keys(state.history).sort((a,b) => b.localeCompare(a));
 
   if (dates.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📅</div>
-        <div class="empty-title">履歴なし</div>
-        <div class="empty-desc">トレーニングを記録すると<br>ここに履歴が表示されます</div>
-      </div>
-    `;
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-title">履歴なし</div><div class="empty-desc">トレーニングを記録すると<br>ここに履歴が表示されます</div></div>`;
     return;
   }
 
-  let html = `
-    <div class="csv-btn-row">
-      <button class="csv-btn" onclick="downloadCSV('today')">📥 今日分CSV</button>
-      <button class="csv-btn csv-btn-all" onclick="downloadCSV('all')">📦 全履歴CSV</button>
-    </div>
-  `;
+  let html = `<div class="csv-btn-row"><button class="csv-btn" onclick="downloadCSV('today')">📥 今日分CSV</button><button class="csv-btn csv-btn-all" onclick="downloadCSV('all')">📦 全履歴CSV</button></div>`;
+
   for (const date of dates) {
-    const log = history[date];
-    const isToday = date === state.currentDate;
-    html += `<div class="history-day">
-      <div class="history-date">${formatDate(date)}${isToday ? ' 　今日' : ''}</div>
-    `;
+    const log = state.history[date];
+    const isToday = date === getTodayStr();
+    html += `<div class="history-day"><div class="history-date">${formatDate(date)}${isToday ? '　今日' : ''}</div>`;
     for (const entry of log) {
-      html += `<div class="history-ex-row">
-        <div class="history-ex-name">${entry.name} <span style="color:var(--text-dim);font-size:11px">${entry.area}</span></div>
-        <div class="history-sets">
-      `;
+      html += `<div class="history-ex-row"><div class="history-ex-name">${entry.name} <span style="color:var(--text-dim);font-size:11px">${entry.area}</span></div><div class="history-sets">`;
       if (entry.type === 'cardio') {
         const parts = [];
         if (entry.time) parts.push(`⏱${entry.time}分`);
@@ -1571,9 +904,7 @@ function renderHistory() {
         if (entry.level) parts.push(`Lv.${entry.level}`);
         html += `<span class="history-set-chip">${parts.join(' ')}</span>`;
       } else {
-        entry.sets.forEach(s => {
-          html += `<span class="history-set-chip ${s.isPR ? 'is-pr' : ''}">${s.weight}kg×${s.reps}${s.isPR ? '🔥' : ''}</span>`;
-        });
+        (entry.sets||[]).forEach(s => { html += `<span class="history-set-chip ${s.isPR?'is-pr':''}">${s.weight}kg×${s.reps}${s.isPR?'🔥':''}</span>`; });
       }
       html += '</div>';
       if (entry.memo) html += `<div class="log-memo" style="margin-top:8px">📝 ${entry.memo}</div>`;
@@ -1584,260 +915,57 @@ function renderHistory() {
   container.innerHTML = html;
 }
 
-// =====================
-// CSV DOWNLOAD
-// =====================
-function downloadCSV(range) {
-  const history = getHistory();
-  let rows = [['日付', 'エリア', '種目', '部位', 'タイプ', 'セット', '重量(kg)', '回数', '時間(分)', '距離(km)', 'レベル', 'PR', 'メモ']];
-
-  const dates = range === 'today'
-    ? [state.currentDate]
-    : Object.keys(history).sort();
-
-  for (const date of dates) {
-    const log = history[date] || [];
-    for (const entry of log) {
-      if (entry.type === 'cardio') {
-        rows.push([
-          date, entry.area, entry.name, '', 'cardio', '', '', '',
-          entry.time || '', entry.dist || '', entry.level || '', '',
-          entry.memo || ''
-        ]);
-      } else {
-        (entry.sets || []).forEach((s, i) => {
-          rows.push([
-            date, entry.area, entry.name, entry.part || '', 'strength',
-            i + 1, s.weight, s.reps, '', '', '',
-            s.isPR ? 'PR' : '',
-            i === 0 ? (entry.memo || '') : ''
-          ]);
-        });
-      }
-    }
-  }
-
-  const csv = '\uFEFF' + rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const filename = range === 'today' ? `fitlog_${state.currentDate}.csv` : `fitlog_all.csv`;
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast(`📥 ${filename} をダウンロード`);
-}
-
-// =====================
-// COMPLETE SCREEN
-// =====================
-function renderComplete() {
-  const container = document.getElementById('completeContent');
-  const history = getHistory();
-
-  // Build set of completed exercise names with first date
-  const doneMap = {}; // name -> earliest date
-  for (const [date, log] of Object.entries(history)) {
-    for (const entry of log) {
-      if (!doneMap[entry.name] || date < doneMap[entry.name]) {
-        doneMap[entry.name] = date;
-      }
-    }
-  }
-
-  // Count totals
-  let totalEx = 0, doneEx = 0;
-  for (const area of Object.values(MACHINES)) {
-    totalEx += area.exercises.length;
-    for (const ex of area.exercises) {
-      if (doneMap[ex.name]) doneEx++;
-    }
-  }
-
-  const pct = totalEx > 0 ? Math.round(doneEx / totalEx * 100) : 0;
-
-  let trophy = '🌱';
-  if (pct >= 100) trophy = '🏆';
-  else if (pct >= 75) trophy = '🥇';
-  else if (pct >= 50) trophy = '🥈';
-  else if (pct >= 25) trophy = '🥉';
-
-  let html = `
-    <div class="complete-header">
-      <div class="complete-trophy">${trophy}</div>
-      <div class="complete-count">${doneEx} / ${totalEx}</div>
-      <div style="font-size:13px;font-weight:700;margin-bottom:8px">マシン制覇率 ${pct}%</div>
-      <div class="complete-progress-wrap">
-        <div class="complete-progress-bar" style="width:${pct}%"></div>
-      </div>
-      <div class="complete-progress-text">${pct < 100 ? `あと ${totalEx - doneEx} 種目でコンプリート！` : '🎉 全マシン制覇達成！！'}</div>
-    </div>
-  `;
-
-  for (const [areaKey, area] of Object.entries(MACHINES)) {
-    const areaDone = area.exercises.filter(ex => doneMap[ex.name]).length;
-    html += `
-      <div class="complete-area-section">
-        <div class="complete-area-title">
-          ${area.icon} ${area.name}
-          <span class="area-done">${areaDone}/${area.exercises.length}</span>
-        </div>
-        <div class="complete-grid">
-    `;
-    for (const ex of area.exercises) {
-      const done = !!doneMap[ex.name];
-      const dateStr = done ? formatDate(doneMap[ex.name]) : '';
-      html += `
-        <div class="complete-ex-chip ${done ? 'done' : ''}">
-          <span class="chip-icon">${done ? '✅' : '⬜'}</span>
-          <div>
-            <div>${ex.name}</div>
-            ${done ? `<div class="chip-date">${dateStr}</div>` : ''}
-          </div>
-        </div>
-      `;
-    }
-    html += `</div></div>`;
-  }
-
-  container.innerHTML = html;
-}
-
-// =====================
-// PREV RECORD
-// =====================
-function getPrevRecord(exName) {
-  const history = getHistory();
-  const dates = Object.keys(history).filter(d => d !== state.currentDate).sort((a,b) => b.localeCompare(a));
-  for (const date of dates) {
-    for (const entry of history[date]) {
-      if (entry.name === exName && entry.sets?.length > 0) {
-        const best = entry.sets.reduce((a, s) => s.weight * s.reps > a.weight * a.reps ? s : a, entry.sets[0]);
-        return `${best.weight}kg × ${best.reps}回 (${formatDate(date)})`;
-      }
-    }
-  }
-  return null;
-}
-
-// =====================
-// STREAK
-// =====================
-function calcStreak() {
-  const history = getHistory();
-  const dates = Object.keys(history).sort((a,b) => b.localeCompare(a));
-  if (dates.length === 0) return 0;
-  let streak = 0;
-  let cur = new Date(state.currentDate);
-  for (let i = 0; i < 365; i++) {
-    const key = cur.toISOString().slice(0, 10);
-    if (history[key]) {
-      streak++;
-      cur.setDate(cur.getDate() - 1);
-    } else if (i === 0) {
-      // today not yet recorded — check yesterday
-      cur.setDate(cur.getDate() - 1);
-    } else {
-      break;
-    }
-  }
-  return streak;
-}
-
-// =====================
+// =============================================
 // CALENDAR SCREEN
-// =====================
-let calState = { year: new Date().getFullYear(), month: new Date().getMonth(), selectedDate: null };
-
+// =============================================
 function renderCalendar() {
   const container = document.getElementById('calendarContent');
-  const history = getHistory();
   const { year, month } = calState;
+  const todayStr = getTodayStr();
 
-  // Month stats
-  const monthDates = Object.keys(history).filter(d => d.startsWith(`${year}-${String(month+1).padStart(2,'0')}`));
-  const monthCount = monthDates.length;
+  const monthKey = `${year}-${String(month+1).padStart(2,'0')}`;
+  const monthDates = Object.keys(state.history).filter(d => d.startsWith(monthKey));
   const streak = calcStreak();
-
-  const monthLabel = `${year} / ${String(month+1).padStart(2,'0')}`;
 
   let html = `
     <div class="cal-header">
       <button class="cal-nav-btn" onclick="calNav(-1)">‹</button>
-      <div class="cal-month">${monthLabel}</div>
+      <div class="cal-month">${year} / ${String(month+1).padStart(2,'0')}</div>
       <button class="cal-nav-btn" onclick="calNav(1)">›</button>
     </div>
     <div class="cal-stats">
-      <div class="cal-stat">
-        <div class="cal-stat-val">${monthCount}</div>
-        <div class="cal-stat-label">今月の来館</div>
-      </div>
-      <div class="cal-stat">
-        <div class="cal-stat-val">${streak}</div>
-        <div class="cal-stat-label">現在のストリーク</div>
-      </div>
+      <div class="cal-stat"><div class="cal-stat-val">${monthDates.length}</div><div class="cal-stat-label">今月の来館</div></div>
+      <div class="cal-stat"><div class="cal-stat-val">${streak}</div><div class="cal-stat-label">ストリーク</div></div>
     </div>
   `;
 
   if (streak >= 2) {
-    html += `
-      <div class="streak-card">
-        <div class="streak-fire">🔥</div>
-        <div>
-          <div class="streak-val">${streak} DAY STREAK</div>
-          <div class="streak-label">${streak}日連続トレーニング中！すごい！</div>
-        </div>
-      </div>
-    `;
+    html += `<div class="streak-card"><div class="streak-fire">🔥</div><div><div class="streak-val">${streak} DAY STREAK</div><div class="streak-label">${streak}日連続トレーニング中！すごい！</div></div></div>`;
   }
 
-  // Calendar grid
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const todayStr = state.currentDate;
 
-  html += `
-    <div class="cal-grid-header">
-      <div class="cal-day-label">日</div>
-      <div class="cal-day-label">月</div>
-      <div class="cal-day-label">火</div>
-      <div class="cal-day-label">水</div>
-      <div class="cal-day-label">木</div>
-      <div class="cal-day-label">金</div>
-      <div class="cal-day-label">土</div>
-    </div>
-    <div class="cal-grid">
-  `;
+  html += `<div class="cal-grid-header"><div class="cal-day-label">日</div><div class="cal-day-label">月</div><div class="cal-day-label">火</div><div class="cal-day-label">水</div><div class="cal-day-label">木</div><div class="cal-day-label">金</div><div class="cal-day-label">土</div></div><div class="cal-grid">`;
 
-  for (let i = 0; i < firstDay; i++) {
-    html += `<div class="cal-cell empty"></div>`;
-  }
+  for (let i = 0; i < firstDay; i++) html += `<div class="cal-cell empty"></div>`;
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const hasLog = !!history[dateStr];
+    const hasLog = !!(state.history[dateStr]?.length);
     const isToday = dateStr === todayStr;
     const isSelected = dateStr === calState.selectedDate;
-    const cls = ['cal-cell', hasLog ? 'has-log' : '', isToday ? 'today' : '', isSelected ? 'selected' : ''].filter(Boolean).join(' ');
-    html += `<div class="${cls}" onclick="calSelectDate('${dateStr}')">
-      ${d}
-      ${hasLog ? '<div class="cal-dot"></div>' : ''}
-    </div>`;
+    const cls = ['cal-cell', hasLog?'has-log':'', isToday?'today':'', isSelected?'selected':''].filter(Boolean).join(' ');
+    html += `<div class="${cls}" onclick="calSelectDate('${dateStr}')">${d}${hasLog?'<div class="cal-dot"></div>':''}</div>`;
   }
 
   html += `</div>`;
 
-  // Detail panel
-  if (calState.selectedDate && history[calState.selectedDate]) {
-    const log = history[calState.selectedDate];
-    html += `<div class="cal-detail">
-      <div class="cal-detail-date">📅 ${formatDate(calState.selectedDate)}</div>
-      <div class="cal-detail-body">`;
+  if (calState.selectedDate && state.history[calState.selectedDate]?.length) {
+    const log = state.history[calState.selectedDate];
+    html += `<div class="cal-detail"><div class="cal-detail-date">📅 ${formatDate(calState.selectedDate)}</div><div class="cal-detail-body">`;
     for (const entry of log) {
-      html += `<div class="cal-detail-ex">
-        <div class="cal-detail-ex-name">${entry.name} <span style="color:var(--text-dim);font-size:11px">${entry.area}</span></div>
-        <div class="cal-detail-chips">`;
+      html += `<div class="cal-detail-ex"><div class="cal-detail-ex-name">${entry.name} <span style="color:var(--text-dim);font-size:11px">${entry.area}</span></div><div class="cal-detail-chips">`;
       if (entry.type === 'cardio') {
         const parts = [];
         if (entry.time) parts.push(`⏱${entry.time}分`);
@@ -1845,9 +973,7 @@ function renderCalendar() {
         if (entry.level) parts.push(`Lv.${entry.level}`);
         html += `<span class="history-set-chip">${parts.join(' ')}</span>`;
       } else {
-        (entry.sets || []).forEach(s => {
-          html += `<span class="history-set-chip ${s.isPR?'is-pr':''}">${s.weight}kg×${s.reps}${s.isPR?'🔥':''}</span>`;
-        });
+        (entry.sets||[]).forEach(s => { html += `<span class="history-set-chip ${s.isPR?'is-pr':''}">${s.weight}kg×${s.reps}${s.isPR?'🔥':''}</span>`; });
       }
       html += `</div>`;
       if (entry.memo) html += `<div class="log-memo" style="margin-top:6px">📝 ${entry.memo}</div>`;
@@ -1868,28 +994,131 @@ function calNav(dir) {
 }
 
 function calSelectDate(dateStr) {
-  const history = getHistory();
-  if (!history[dateStr]) return;
+  if (!state.history[dateStr]?.length) return;
   calState.selectedDate = calState.selectedDate === dateStr ? null : dateStr;
   renderCalendar();
 }
 
-// =====================
+// =============================================
+// COMPLETE SCREEN
+// =============================================
+function renderComplete() {
+  const container = document.getElementById('completeContent');
+  const doneMap = {};
+  for (const [date, log] of Object.entries(state.history)) {
+    for (const entry of log) {
+      if (!doneMap[entry.name] || date < doneMap[entry.name]) doneMap[entry.name] = date;
+    }
+  }
+
+  let totalEx = 0, doneEx = 0;
+  for (const area of Object.values(MACHINES)) {
+    totalEx += area.exercises.length;
+    for (const ex of area.exercises) { if (doneMap[ex.name]) doneEx++; }
+  }
+
+  const pct = totalEx > 0 ? Math.round(doneEx / totalEx * 100) : 0;
+  let trophy = '🌱';
+  if (pct >= 100) trophy = '🏆';
+  else if (pct >= 75) trophy = '🥇';
+  else if (pct >= 50) trophy = '🥈';
+  else if (pct >= 25) trophy = '🥉';
+
+  let html = `<div class="complete-header"><div class="complete-trophy">${trophy}</div><div class="complete-count">${doneEx} / ${totalEx}</div><div style="font-size:13px;font-weight:700;margin-bottom:8px">マシン制覇率 ${pct}%</div><div class="complete-progress-wrap"><div class="complete-progress-bar" style="width:${pct}%"></div></div><div class="complete-progress-text">${pct < 100 ? `あと ${totalEx - doneEx} 種目でコンプリート！` : '🎉 全マシン制覇達成！！'}</div></div>`;
+
+  for (const [, area] of Object.entries(MACHINES)) {
+    const areaDone = area.exercises.filter(ex => doneMap[ex.name]).length;
+    html += `<div class="complete-area-section"><div class="complete-area-title">${area.icon} ${area.name}<span class="area-done">${areaDone}/${area.exercises.length}</span></div><div class="complete-grid">`;
+    for (const ex of area.exercises) {
+      const done = !!doneMap[ex.name];
+      html += `<div class="complete-ex-chip ${done?'done':''}"><span class="chip-icon">${done?'✅':'⬜'}</span><div><div>${ex.name}</div>${done?`<div class="chip-date">${formatDate(doneMap[ex.name])}</div>`:''}</div></div>`;
+    }
+    html += `</div></div>`;
+  }
+  container.innerHTML = html;
+}
+
+// =============================================
+// UTILS
+// =============================================
+function checkPR(exName, weight, reps) {
+  let bestVol = 0;
+  for (const [date, log] of Object.entries(state.history)) {
+    if (date === state.recordingDate) continue;
+    for (const entry of log) {
+      if (entry.name !== exName) continue;
+      for (const s of (entry.sets || [])) bestVol = Math.max(bestVol, (s.weight||0) * (s.reps||0));
+    }
+  }
+  return bestVol > 0 && weight * reps > bestVol;
+}
+
+function getPrevRecord(exName) {
+  const dates = Object.keys(state.history).filter(d => d !== state.recordingDate).sort((a,b) => b.localeCompare(a));
+  for (const date of dates) {
+    for (const entry of state.history[date]) {
+      if (entry.name === exName && entry.sets?.length > 0) {
+        const best = entry.sets.reduce((a, s) => s.weight * s.reps > a.weight * a.reps ? s : a, entry.sets[0]);
+        return `${best.weight}kg × ${best.reps}回 (${formatDate(date)})`;
+      }
+    }
+  }
+  return null;
+}
+
+function calcStreak() {
+  let streak = 0;
+  const cur = new Date(getTodayStr() + 'T00:00:00');
+  for (let i = 0; i < 365; i++) {
+    const key = cur.toISOString().slice(0, 10);
+    if (state.history[key]?.length) { streak++; cur.setDate(cur.getDate() - 1); }
+    else if (i === 0) { cur.setDate(cur.getDate() - 1); }
+    else break;
+  }
+  return streak;
+}
+
+// =============================================
+// CSV DOWNLOAD
+// =============================================
+function downloadCSV(range) {
+  let rows = [['日付','エリア','種目','部位','タイプ','セット','重量(kg)','回数','時間(分)','距離(km)','レベル','PR','メモ']];
+  const dates = range === 'today' ? [state.recordingDate] : Object.keys(state.history).sort();
+  for (const date of dates) {
+    for (const entry of (state.history[date] || [])) {
+      if (entry.type === 'cardio') {
+        rows.push([date, entry.area, entry.name, '', 'cardio', '', '', '', entry.time||'', entry.dist||'', entry.level||'', '', entry.memo||'']);
+      } else {
+        (entry.sets||[]).forEach((s, i) => { rows.push([date, entry.area, entry.name, entry.part||'', 'strength', i+1, s.weight, s.reps, '', '', '', s.isPR?'PR':'', i===0?(entry.memo||')':'']); });
+      }
+    }
+  }
+  const csv = '\uFEFF' + rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = range === 'today' ? `fitlog_${state.recordingDate}.csv` : 'fitlog_all.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📥 CSVをダウンロード');
+}
+
+// =============================================
 // TOAST
-// =====================
-function showToast(msg) {
+// =============================================
+function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '');
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-// Update finish button visibility on tab change
-document.querySelectorAll('.nav-tab').forEach((tab, i) => {
-  tab.addEventListener('click', () => {
-    setTimeout(updateFinishBtn, 50);
-  });
-});
+// =============================================
+// START
+// =============================================
+init();
 </script>
 </body>
 </html>
