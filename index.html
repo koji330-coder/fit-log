@@ -450,7 +450,7 @@
 // =============================================
 // CONFIG
 // =============================================
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxeckvau7yWk7rsg-kOL7tP2Om-XyGt-lTdh7J2IZvmNivMKT8NUGYWqwvIrO7D6bNn/exec/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxeckvau7yWk7rsg-kOL7tP2Om-XyGt-lTdh7J2IZvmNivMKT8NUGYWqwvIrO7D6bNn/exec';
 
 // =============================================
 // MACHINES DATA
@@ -1089,7 +1089,7 @@ function downloadCSV(range) {
       if (entry.type === 'cardio') {
         rows.push([date, entry.area, entry.name, '', 'cardio', '', '', '', entry.time||'', entry.dist||'', entry.level||'', '', entry.memo||'']);
       } else {
-        (entry.sets||[]).forEach((s, i) => { rows.push([date, entry.area, entry.name, entry.part||'', 'strength', i+1, s.weight, s.reps, '', '', '', s.isPR?'PR':'', i===0?(entry.memo||')':'']); });
+        (entry.sets||[]).forEach((s, i) => { rows.push([date, entry.area, entry.name, entry.part||'', 'strength', i+1, s.weight, s.reps, '', '', '', s.isPR?'PR':'', i===0?(entry.memo||''):'']); });
       }
     }
   }
