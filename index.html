@@ -377,6 +377,37 @@
     transition: width 0.4s ease;
   }
 
+  /* SETTINGS SCREEN */
+  .settings-section { margin-bottom: 28px; }
+  .settings-section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px; letter-spacing: 3px;
+    color: var(--text-dim); margin-bottom: 12px;
+  }
+  .trainer-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .trainer-select-btn {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 12px; padding: 12px 14px;
+    text-align: left; cursor: pointer; transition: all 0.2s;
+    color: var(--text); font-family: 'Noto Sans JP', sans-serif;
+  }
+  .trainer-select-btn.active {
+    border-color: var(--accent); background: rgba(255,61,107,0.1);
+  }
+  .trainer-select-btn .t-name { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+  .trainer-select-btn .t-tone { font-size: 11px; color: var(--text-dim); line-height: 1.4; }
+  .trainer-select-btn .t-check { float: right; font-size: 16px; }
+
+  .settings-card {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
+  }
+  .settings-card-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .settings-card-desc { font-size: 12px; color: var(--text-dim); margin-bottom: 12px; line-height: 1.6; }
+  .menu-dl-btns { display: flex; gap: 10px; }
+
   /* FINISH BUTTON */
   .finish-btn-wrap { padding: 16px; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: linear-gradient(to top, var(--bg) 80%, transparent); }
   .finish-btn { width: 100%; padding: 18px; border-radius: 14px; border: none; background: linear-gradient(135deg, var(--success), #0aab7c); color: white; font-family: 'Noto Sans JP', sans-serif; font-size: 15px; font-weight: 900; cursor: pointer; letter-spacing: 2px; transition: all 0.2s; }
@@ -431,6 +462,7 @@
   <button class="nav-tab" onclick="showScreen('today')">今日</button>
   <button class="nav-tab" onclick="showScreen('calendar')">📆 カレンダー</button>
   <button class="nav-tab" onclick="showScreen('complete')">🏆 図鑑</button>
+  <button class="nav-tab" onclick="showScreen('settings')">⚙️ 設定</button>
 </div>
 
 <!-- RECORD SCREEN -->
@@ -522,6 +554,11 @@
   <div id="completeContent"></div>
 </div>
 
+<!-- SETTINGS SCREEN -->
+<div class="screen" id="screen-settings">
+  <div id="settingsContent"></div>
+</div>
+
 <div class="finish-btn-wrap" id="finishBtnWrap" style="display:none">
   <button class="finish-btn" onclick="finishWorkout()">🏁 トレーニング完了！</button>
 </div>
@@ -601,8 +638,9 @@ let state = {
   selectedExercise: null,
   currentSets: [],
   history: {},
-  menus: {}, // { menu_sunny: { comment, items }, menu_rainy: { comment, items } }
-  activeMenu: null, // 'menu_sunny' or 'menu_rainy'
+  menus: {},
+  activeMenu: null,
+  selectedTrainer: null, // 褒めトレーナー（nullの場合はメニューのtrainerを使う）
 };
 
 let calState = { year: new Date().getFullYear(), month: new Date().getMonth(), selectedDate: null };
@@ -652,6 +690,11 @@ async function init() {
     showToast('通信エラー: オフラインの可能性があります', true);
   }
   document.getElementById('loadingOverlay').classList.add('hidden');
+  // 保存済みのトレーナー設定を復元
+  try {
+    const saved = localStorage.getItem('fitlog_trainer');
+    if (saved) state.selectedTrainer = saved;
+  } catch(e) {}
   updateHeaderDate();
   updateRecDateBanner();
   renderAreas();
@@ -731,6 +774,7 @@ function showScreen(name) {
   if (name === 'history') renderHistory();
   if (name === 'calendar') renderCalendar();
   if (name === 'complete') renderComplete();
+  if (name === 'settings') renderSettings();
   updateFinishBtn();
 }
 
@@ -977,12 +1021,15 @@ async function finishWorkout() {
 
   const log = state.history[state.recordingDate] || [];
 
-  // activeMenuが未設定でも最初に見つかったメニューのトレーナーを使う
-  const activeKey = state.activeMenu
-    || (state.menus['menu_sunny'] ? 'menu_sunny' : null)
-    || (state.menus['menu_rainy'] ? 'menu_rainy' : null);
-  const menu = activeKey ? state.menus[activeKey] : null;
-  const trainerName = menu?.trainer || '佐々木舞香';
+  // 設定で選んだトレーナーを優先、なければメニューのトレーナーを使う
+  let trainerName = state.selectedTrainer;
+  if (!trainerName) {
+    const activeKey = state.activeMenu
+      || (state.menus['menu_sunny'] ? 'menu_sunny' : null)
+      || (state.menus['menu_rainy'] ? 'menu_rainy' : null);
+    const menu = activeKey ? state.menus[activeKey] : null;
+    trainerName = menu?.trainer || '佐々木舞香';
+  }
 
   const praiseArea = document.getElementById('aiPraiseArea');
   praiseArea.innerHTML = `
@@ -1449,6 +1496,124 @@ function downloadCSV(range) {
   a.click();
   URL.revokeObjectURL(url);
   showToast('📥 CSVをダウンロード');
+}
+
+// =============================================
+// SETTINGS SCREEN
+// =============================================
+function renderSettings() {
+  const container = document.getElementById('settingsContent');
+
+  // トレーナー一覧をスプレッドシートから取得済みのメニューに合わせて構築
+  // ＝LOVEメンバー＋オリジナルキャラ
+  const trainers = [
+    { name: '大谷映美里', tone: '明るい・やさしいお姉さん' },
+    { name: '大場花菜',   tone: '癒し系・じんわり励ます' },
+    { name: '音嶋莉沙',   tone: '上品・お姫様系' },
+    { name: '齋藤樹愛羅', tone: '元気・キラキラ・直球応援' },
+    { name: '佐々木舞香', tone: 'クール・現実的・ツンデレ' },
+    { name: '髙松瞳',     tone: '熱血・王道・牽引型' },
+    { name: '瀧脇笙古',   tone: 'まじめ・努力家・前向き' },
+    { name: '野口衣織',   tone: '分析的・文学的・クール' },
+    { name: '諸橋沙夏',   tone: '明るい・朗らか・歌姉' },
+    { name: '山本杏奈',   tone: '実直・リーダー・地に足' },
+    { name: '白石ナナ',   tone: '科学的・栄養士・丁寧' },
+  ];
+
+  const currentTrainer = state.selectedTrainer;
+
+  let html = `
+    <div class="settings-section">
+      <div class="settings-section-title">🌸 褒めトレーナーを選ぶ</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;line-height:1.6">
+        トレーニング完了時に褒めてくれる人を選べます。<br>
+        メニューのトレーナーとは独立して設定できます。
+      </div>
+      <div style="margin-bottom:10px">
+        <button class="trainer-select-btn ${!currentTrainer ? 'active' : ''}"
+          onclick="selectTrainer(null)" style="width:100%;margin-bottom:8px">
+          <div class="t-name">🔀 メニューのトレーナーに従う（デフォルト）</div>
+          <div class="t-tone">晴れ/雨のメニューに設定されたトレーナーが担当</div>
+        </button>
+      </div>
+      <div class="trainer-grid">
+  `;
+
+  trainers.forEach(t => {
+    const isActive = currentTrainer === t.name;
+    html += `
+      <button class="trainer-select-btn ${isActive ? 'active' : ''}" onclick="selectTrainer('${t.name}')">
+        <span class="t-check">${isActive ? '✅' : ''}</span>
+        <div class="t-name">${t.name}</div>
+        <div class="t-tone">${t.tone}</div>
+      </button>
+    `;
+  });
+
+  html += `</div></div>`;
+
+  // 次回メニューDLセクション
+  html += `
+    <div class="settings-section">
+      <div class="settings-section-title">📥 次回メニューを準備する</div>
+      <div class="settings-card">
+        <div class="settings-card-title">今日の記録からメニューCSVを出力</div>
+        <div class="settings-card-desc">
+          今日の記録・メモをCSVに含めてダウンロードします。<br>
+          このCSVをClaudeやGPTに渡して「次回メニューを作って」と依頼するだけで、
+          記録を踏まえた最適なメニューが作れます。
+        </div>
+        <div class="menu-dl-btns">
+          <button class="btn btn-secondary btn-sm" onclick="downloadForNextMenu('sunny')">☀️ 晴れ用に出力</button>
+          <button class="btn btn-secondary btn-sm" onclick="downloadForNextMenu('rainy')">🌧️ 雨用に出力</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+function selectTrainer(name) {
+  state.selectedTrainer = name;
+  // LocalStorageに保存（設定は端末に残す）
+  try { localStorage.setItem('fitlog_trainer', name || ''); } catch(e) {}
+  renderSettings();
+  showToast(name ? `✅ ${name}を選択しました` : '✅ メニューのトレーナーに従います');
+}
+
+function downloadForNextMenu(type) {
+  const log = state.history[state.recordingDate] || [];
+  if (log.length === 0) { showToast('今日の記録がありません', true); return; }
+
+  const typeLabel = type === 'sunny' ? '晴れ' : '雨';
+  let rows = [['日付', 'エリア', '種目', '部位', 'タイプ', 'セット', '重量(kg)', '回数', '時間(分)', '距離(km)', 'レベル', 'PR', 'メモ']];
+
+  for (const entry of log) {
+    if (entry.type === 'cardio') {
+      rows.push([state.recordingDate, entry.area, entry.name, '', 'cardio', '', '', '',
+        entry.time||'', entry.dist||'', entry.level||'', '', entry.memo||'']);
+    } else {
+      (entry.sets||[]).forEach((s, i) => {
+        rows.push([state.recordingDate, entry.area, entry.name, entry.part||'', 'strength',
+          i+1, s.weight, s.reps, '', '', '', s.isPR?'PR':'', i===0?(entry.memo||''):'']);
+      });
+    }
+  }
+
+  // メモ付きサマリーをコメント行として追加
+  const memoEntries = log.filter(e => e.memo).map(e => `${e.name}:${e.memo}`).join(' / ');
+  const header = `# 次回メニュー作成用データ（${typeLabel}の日）\n# 今日の記録メモ: ${memoEntries || 'なし'}\n# AIへの依頼例: 「このデータを参考に${typeLabel}の日のメニューを作って」\n`;
+
+  const csv = header + '\uFEFF' + rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fitlog_for_next_menu_${type}_${state.recordingDate}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`📥 ${typeLabel}用データをダウンロード`);
 }
 
 // =============================================
