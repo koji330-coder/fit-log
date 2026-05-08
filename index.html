@@ -493,6 +493,30 @@
   }
   .meal-select:focus { outline: none; border-color: var(--accent); }
 
+  /* PERIOD REVIEW */
+  .period-btn-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .period-btn {
+    padding: 8px 14px; border-radius: 10px;
+    border: 1.5px solid var(--border); background: var(--surface);
+    color: var(--text-dim); font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+  }
+  .period-btn.active { border-color: var(--accent); background: rgba(255,61,107,0.1); color: var(--text); }
+  .period-custom-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .period-custom-row input { flex:1; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 8px 10px; color: var(--text); font-size:13px; }
+  .period-custom-row input:focus { outline: none; border-color: var(--accent); }
+  .review-result { margin-top: 12px; }
+  .pfc-suggestion-card {
+    background: rgba(255,61,107,0.08); border: 1.5px solid rgba(255,61,107,0.25);
+    border-radius: 12px; padding: 14px 16px; margin-top: 12px;
+  }
+  .pfc-suggestion-title { font-size:12px; font-weight:900; color:var(--accent); margin-bottom:10px; letter-spacing:1px; }
+  .pfc-suggestion-grid { display: grid; grid-template-columns: repeat(4,1fr); gap:6px; margin-bottom:10px; }
+  .pfc-sug-item { background: var(--bg); border-radius:8px; padding:8px; text-align:center; }
+  .pfc-sug-val { font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--accent); }
+  .pfc-sug-label { font-size:10px; color:var(--text-dim); font-weight:700; }
+  .pfc-sug-reason { font-size:11px; color:var(--text-dim); line-height:1.6; margin-bottom:10px; }
+
   /* DISABLED STATE */
   button:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important; }
 
@@ -655,6 +679,54 @@
     <div class="btn-row">
       <button class="btn btn-secondary btn-sm" onclick="closeMealEditModal()">キャンセル</button>
       <button class="btn btn-primary btn-sm" onclick="saveMealEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- PERIOD REVIEW MODAL -->
+<div class="modal-overlay hidden" id="periodReviewModal">
+  <div class="meal-modal-box" style="max-height:90vh;overflow-y:auto">
+    <div class="meal-modal-title">📊 期間振り返り</div>
+
+    <div class="input-group" style="margin-bottom:10px">
+      <div class="input-label">振り返りトレーナー</div>
+      <select class="meal-select" id="reviewTrainerSel"></select>
+    </div>
+
+    <div class="input-label" style="margin-bottom:8px">期間を選ぶ</div>
+    <div class="period-btn-grid" id="periodBtnGrid">
+      <button class="period-btn active" onclick="setPeriod('7d',this)">直近7日</button>
+      <button class="period-btn" onclick="setPeriod('30d',this)">直近30日</button>
+      <button class="period-btn" onclick="setPeriod('thisMonth',this)">今月</button>
+      <button class="period-btn" onclick="setPeriod('lastMonth',this)">先月</button>
+      <button class="period-btn" onclick="setPeriod('custom',this)">カスタム</button>
+    </div>
+
+    <div id="customPeriodRow" class="period-custom-row" style="display:none">
+      <input type="date" id="reviewDateFrom">
+      <span style="color:var(--text-dim);font-size:12px">〜</span>
+      <input type="date" id="reviewDateTo">
+    </div>
+
+    <div class="input-group" style="margin-bottom:10px">
+      <div class="input-label">📸 体重・体脂肪の画像（任意）</div>
+      <input type="file" id="reviewImageInput" accept="image/*" style="display:none" onchange="handleReviewImage(event)">
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('reviewImageInput').click()">画像を選ぶ</button>
+        <span id="reviewImageLabel" style="font-size:12px;color:var(--text-dim)">未選択</span>
+      </div>
+    </div>
+
+    <div class="input-group" style="margin-bottom:14px">
+      <div class="input-label">一言コメント（任意）</div>
+      <textarea class="memo-field" id="reviewNote" placeholder="最近疲れ気味、体重が少し戻った、など"></textarea>
+    </div>
+
+    <div class="review-result" id="reviewResult"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary btn-sm" onclick="closePeriodReviewModal()">閉じる</button>
+      <button class="btn btn-primary btn-sm" onclick="doperiodReview()" id="periodReviewBtn">🌸 振り返る</button>
     </div>
   </div>
 </div>
@@ -883,7 +955,12 @@ let state = {
   trainerMeal: null,       // 🍽️ 食事分析用
   trainerList: [],
   meals: {},
-  profile: { nickname: 'ガッキー', height: '', weight: '', gender: '', age: '', goal: '細マッチョ（体脂肪15%以下）' },
+  profile: {
+    nickname: 'ガッキー', height: '', weight: '', gender: '', age: '',
+    goal: '細マッチョ（体脂肪15%以下）',
+    target_kcal: '', target_protein: '', target_fat: '', target_carb: '',
+    training_day_kcal_bonus: '', meal_template_suggest_enabled: 'false',
+  },
   aiMenuType: 'sunny',
 };
 
@@ -1191,6 +1268,13 @@ async function saveExercise() {
 // =============================================
 // TODAY SCREEN
 // =============================================
+function diffBadge(cur, target) {
+  if (!target) return '';
+  const diff = cur - target;
+  if (diff >= 0) return `<span style="color:var(--accent);font-size:10px">+${diff}</span>`;
+  return `<span style="color:var(--success);font-size:10px">${diff}</span>`;
+}
+
 function renderToday() {
   const container = document.getElementById('todayContent');
   const log = state.history[state.recordingDate] || [];
@@ -1251,11 +1335,19 @@ function renderToday() {
   if (todayMeals.length === 0) {
     html += `<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:13px">まだ食事記録がありません</div>`;
   } else {
-    // 合計値
+    // 合計値と目標差分
     const totalKcal = todayMeals.reduce((a, m) => a + (m.kcal || 0), 0);
     const totalP = todayMeals.reduce((a, m) => a + (m.protein || 0), 0);
     const totalF = todayMeals.reduce((a, m) => a + (m.fat || 0), 0);
     const totalC = todayMeals.reduce((a, m) => a + (m.carb || 0), 0);
+
+    const p = state.profile || {};
+    const isWorkoutDay = (state.history[state.recordingDate] || []).length > 0;
+    const tKcal = parseInt(p.target_kcal || 0) + (isWorkoutDay ? parseInt(p.training_day_kcal_bonus || 0) : 0);
+    const tP = parseInt(p.target_protein || 0);
+    const tF = parseInt(p.target_fat || 0);
+    const tC = parseInt(p.target_carb || 0);
+    const hasTarget = tKcal > 0 || tP > 0;
 
     todayMeals.forEach(m => {
       html += `
@@ -1281,11 +1373,28 @@ function renderToday() {
 
     html += `
       <div class="meal-day-total">
-        <div><span class="tot-label">今日の合計 </span><span class="tot-val">${totalKcal}kcal</span></div>
-        <div><span class="tot-label">P </span><span class="tot-val">${totalP}g</span></div>
-        <div><span class="tot-label">F </span><span class="tot-val">${totalF}g</span></div>
-        <div><span class="tot-label">C </span><span class="tot-val">${totalC}g</span></div>
+        <div>
+          <span class="tot-label">🔥 </span>
+          <span class="tot-val">${totalKcal}${tKcal ? `<span style="color:var(--text-dim);font-weight:400">/${tKcal}</span>` : ''}kcal</span>
+          ${tKcal ? diffBadge(totalKcal, tKcal) : ''}
+        </div>
+        <div>
+          <span class="tot-label">P </span>
+          <span class="tot-val">${totalP}${tP ? `<span style="color:var(--text-dim);font-weight:400">/${tP}</span>` : ''}g</span>
+          ${tP ? diffBadge(totalP, tP) : ''}
+        </div>
+        <div>
+          <span class="tot-label">F </span>
+          <span class="tot-val">${totalF}${tF ? `<span style="color:var(--text-dim);font-weight:400">/${tF}</span>` : ''}g</span>
+          ${tF ? diffBadge(totalF, tF) : ''}
+        </div>
+        <div>
+          <span class="tot-label">C </span>
+          <span class="tot-val">${totalC}${tC ? `<span style="color:var(--text-dim);font-weight:400">/${tC}</span>` : ''}g</span>
+          ${tC ? diffBadge(totalC, tC) : ''}
+        </div>
       </div>
+      ${isWorkoutDay && tKcal ? `<div style="font-size:11px;color:var(--accent2);text-align:right;margin-top:4px;font-weight:700">💪 トレ日ボーナス+${p.training_day_kcal_bonus||0}kcal込み</div>` : ''}
     `;
   }
 
@@ -1492,6 +1601,7 @@ function renderCalendar() {
       <div class="cal-month">${year} / ${String(month+1).padStart(2,'0')}</div>
       <button class="cal-nav-btn" onclick="calNav(1)">›</button>
     </div>
+    <button class="btn btn-secondary" style="margin-bottom:14px;font-size:13px" onclick="openPeriodReviewModal()">📊 期間を振り返る</button>
     <div class="cal-stats">
       <div class="cal-stat"><div class="cal-stat-val">${monthDates.length}</div><div class="cal-stat-label">今月の来館</div></div>
       <div class="cal-stat"><div class="cal-stat-val">${streak}</div><div class="cal-stat-label">ストリーク</div></div>
@@ -1823,6 +1933,184 @@ async function deleteMealRecord(date, time) {
     isDeletingMeal = false;
   }
   renderToday();
+}
+
+// =============================================
+// 期間振り返り
+// =============================================
+let reviewPeriodType = '7d';
+let reviewImageBase64 = null;
+
+function openPeriodReviewModal() {
+  reviewPeriodType = '7d';
+  reviewImageBase64 = null;
+  document.getElementById('reviewImageLabel').textContent = '未選択';
+  document.getElementById('reviewNote').value = '';
+  document.getElementById('reviewResult').innerHTML = '';
+  document.getElementById('customPeriodRow').style.display = 'none';
+  document.getElementById('periodReviewBtn').disabled = false;
+  document.getElementById('periodReviewBtn').textContent = '🌸 振り返る';
+
+  // 期間ボタンリセット
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.period-btn').classList.add('active');
+
+  // 今日の日付をカスタム欄にデフォルト設定
+  const today = getTodayStr();
+  const d7 = new Date(); d7.setDate(d7.getDate() - 7);
+  document.getElementById('reviewDateFrom').value = d7.toISOString().slice(0,10);
+  document.getElementById('reviewDateTo').value = today;
+
+  // トレーナー選択肢
+  const sel = document.getElementById('reviewTrainerSel');
+  sel.innerHTML = `<option value="">佐々木舞香（デフォルト）</option>` +
+    state.trainerList.map(t =>
+      `<option value="${t.name}" ${state.trainerReview===t.name?'selected':''}>${t.name}</option>`
+    ).join('');
+
+  document.getElementById('periodReviewModal').classList.remove('hidden');
+}
+
+function closePeriodReviewModal() {
+  document.getElementById('periodReviewModal').classList.add('hidden');
+}
+
+function setPeriod(type, btn) {
+  reviewPeriodType = type;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('customPeriodRow').style.display = type === 'custom' ? 'flex' : 'none';
+}
+
+function handleReviewImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  compressImage(file, 800, 0.7).then(b64 => {
+    reviewImageBase64 = b64;
+    document.getElementById('reviewImageLabel').textContent = file.name;
+  });
+}
+
+function getPeriodRange(type) {
+  const today = new Date();
+  const todayStr = getTodayStr();
+  let from, to;
+
+  if (type === '7d') {
+    const d = new Date(); d.setDate(d.getDate() - 6);
+    from = d.toISOString().slice(0,10); to = todayStr;
+  } else if (type === '30d') {
+    const d = new Date(); d.setDate(d.getDate() - 29);
+    from = d.toISOString().slice(0,10); to = todayStr;
+  } else if (type === 'thisMonth') {
+    from = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-01`;
+    to = todayStr;
+  } else if (type === 'lastMonth') {
+    const d = new Date(today.getFullYear(), today.getMonth(), 0);
+    const first = new Date(today.getFullYear(), today.getMonth()-1, 1);
+    from = first.toISOString().slice(0,10);
+    to = d.toISOString().slice(0,10);
+  } else {
+    from = document.getElementById('reviewDateFrom').value;
+    to = document.getElementById('reviewDateTo').value;
+  }
+  return { from, to };
+}
+
+function periodLabel(type) {
+  const labels = { '7d':'直近7日', '30d':'直近30日', 'thisMonth':'今月', 'lastMonth':'先月', 'custom':'指定期間' };
+  return labels[type] || '指定期間';
+}
+
+async function doperiodReview() {
+  const btn = document.getElementById('periodReviewBtn');
+  btn.disabled = true; btn.textContent = '⏳ 分析中...';
+
+  const { from, to } = getPeriodRange(reviewPeriodType);
+  const label = periodLabel(reviewPeriodType);
+  const trainerName = document.getElementById('reviewTrainerSel').value || state.trainerReview || '佐々木舞香';
+  const note = document.getElementById('reviewNote').value.trim();
+
+  // 期間内のデータを抽出
+  const logs = {};
+  const meals = {};
+  for (const [date, entries] of Object.entries(state.history)) {
+    if (date >= from && date <= to) logs[date] = entries;
+  }
+  for (const [date, entries] of Object.entries(state.meals)) {
+    if (date >= from && date <= to) meals[date] = entries;
+  }
+
+  try {
+    const result = await gasPost({
+      action: 'periodReview',
+      logs, meals,
+      profile: state.profile,
+      trainerName,
+      imageBase64: reviewImageBase64,
+      note,
+      periodLabel: label,
+    });
+
+    if (result.status !== 'ok') throw new Error(result.message);
+
+    // PFC提案をパース
+    const text = result.text;
+    const pfcMatch = text.match(/<PFC_SUGGESTION>([\s\S]*?)<\/PFC_SUGGESTION>/);
+    const mainText = text.replace(/<PFC_SUGGESTION>[\s\S]*?<\/PFC_SUGGESTION>/g, '').trim();
+
+    let pfcHtml = '';
+    if (pfcMatch) {
+      try {
+        const pfc = JSON.parse(pfcMatch[1]);
+        pfcHtml = `
+          <div class="pfc-suggestion-card">
+            <div class="pfc-suggestion-title">💡 PFC目標の修正提案</div>
+            <div class="pfc-suggestion-grid">
+              <div class="pfc-sug-item"><div class="pfc-sug-val">${pfc.kcal}</div><div class="pfc-sug-label">KCAL</div></div>
+              <div class="pfc-sug-item"><div class="pfc-sug-val">${pfc.protein}</div><div class="pfc-sug-label">P(g)</div></div>
+              <div class="pfc-sug-item"><div class="pfc-sug-val">${pfc.fat}</div><div class="pfc-sug-label">F(g)</div></div>
+              <div class="pfc-sug-item"><div class="pfc-sug-val">${pfc.carb}</div><div class="pfc-sug-label">C(g)</div></div>
+            </div>
+            <div class="pfc-sug-reason">${pfc.reason || ''}</div>
+            <button class="btn btn-primary btn-sm" onclick="applyPfcSuggestion(${pfc.kcal},${pfc.protein},${pfc.fat},${pfc.carb})">
+              ✅ この目標値で更新する
+            </button>
+          </div>
+        `;
+      } catch(e) {}
+    }
+
+    document.getElementById('reviewResult').innerHTML = `
+      <div class="ai-praise-card" style="margin-bottom:8px">
+        <div class="ai-praise-header">
+          <div class="ai-icon">🌸</div>
+          <div><div class="ai-label">${label}の振り返り</div><div class="ai-name">${trainerName}より</div></div>
+        </div>
+        <div class="ai-text">${mainText.replace(/\n/g,'<br>')}</div>
+      </div>
+      ${pfcHtml}
+    `;
+  } catch(e) {
+    document.getElementById('reviewResult').innerHTML = `<div style="color:var(--accent);font-size:13px">エラーが発生しました。もう一度お試しください。</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = '🌸 振り返る';
+  }
+}
+
+async function applyPfcSuggestion(kcal, protein, fat, carb) {
+  state.profile.target_kcal = String(kcal);
+  state.profile.target_protein = String(protein);
+  state.profile.target_fat = String(fat);
+  state.profile.target_carb = String(carb);
+
+  try {
+    await gasPost({ action: 'saveProfile', profile: state.profile });
+    showToast('✅ PFC目標を更新しました！');
+    closePeriodReviewModal();
+  } catch(e) {
+    showToast('更新失敗', true);
+  }
 }
 
 // =============================================
@@ -2390,6 +2678,40 @@ function renderSettings() {
           <div class="input-label">目標</div>
           <input class="input-field" type="text" id="profGoal" value="${p.goal||''}" placeholder="細マッチョ（体脂肪15%以下）" style="font-size:13px;text-align:left">
         </div>
+        <div style="font-size:11px;font-weight:900;letter-spacing:2px;color:var(--text-dim);margin:12px 0 8px">📊 栄養目標（1日あたり）</div>
+        <div class="input-row" style="margin-bottom:10px">
+          <div class="input-group">
+            <div class="input-label">目標カロリー</div>
+            <input class="input-field" type="number" id="profTargetKcal" value="${p.target_kcal||''}" placeholder="1800" inputmode="numeric">
+          </div>
+          <div class="input-group">
+            <div class="input-label">トレ日ボーナス</div>
+            <input class="input-field" type="number" id="profTrainingBonus" value="${p.training_day_kcal_bonus||''}" placeholder="+200" inputmode="numeric">
+          </div>
+        </div>
+        <div class="input-row" style="margin-bottom:10px">
+          <div class="input-group">
+            <div class="input-label">タンパク質g</div>
+            <input class="input-field" type="number" id="profTargetProtein" value="${p.target_protein||''}" placeholder="120" inputmode="numeric">
+          </div>
+          <div class="input-group">
+            <div class="input-label">脂質g</div>
+            <input class="input-field" type="number" id="profTargetFat" value="${p.target_fat||''}" placeholder="50" inputmode="numeric">
+          </div>
+        </div>
+        <div class="input-row" style="margin-bottom:10px">
+          <div class="input-group">
+            <div class="input-label">炭水化物g</div>
+            <input class="input-field" type="number" id="profTargetCarb" value="${p.target_carb||''}" placeholder="180" inputmode="numeric">
+          </div>
+          <div class="input-group">
+            <div class="input-label">テンプレ提案</div>
+            <select class="meal-select" id="profTemplSuggest" style="margin-bottom:0">
+              <option value="false" ${(p.meal_template_suggest_enabled||'false')==='false'?'selected':''}>オフ</option>
+              <option value="true" ${p.meal_template_suggest_enabled==='true'?'selected':''}>オン</option>
+            </select>
+          </div>
+        </div>
         <button class="btn btn-primary btn-sm" onclick="saveProfileSettings()">💾 プロフィールを保存</button>
       </div>
     </div>
@@ -2465,6 +2787,12 @@ async function saveProfileSettings() {
     weight: document.getElementById('profWeight').value,
     bodyfat: document.getElementById('profBodyfat').value,
     goal: document.getElementById('profGoal').value.trim(),
+    target_kcal: document.getElementById('profTargetKcal').value,
+    target_protein: document.getElementById('profTargetProtein').value,
+    target_fat: document.getElementById('profTargetFat').value,
+    target_carb: document.getElementById('profTargetCarb').value,
+    training_day_kcal_bonus: document.getElementById('profTrainingBonus').value,
+    meal_template_suggest_enabled: document.getElementById('profTemplSuggest').value,
   };
 
   state.profile = profile;
