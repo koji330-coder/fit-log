@@ -1096,46 +1096,47 @@ function renderToday() {
   const log = state.history[state.recordingDate] || [];
   const dateLabel = state.recordingDate === getTodayStr() ? '今日' : formatDate(state.recordingDate);
 
+  let html = '';
+
   if (log.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">💪</div><div class="empty-title">${dateLabel}はまだ記録なし</div><div class="empty-desc">「記録」タブからトレーニングを追加しよう！</div></div>`;
-    return;
-  }
+    html += `<div class="empty-state" style="padding:30px 20px"><div class="empty-icon">💪</div><div class="empty-title">${dateLabel}はまだ筋トレ記録なし</div><div class="empty-desc">「記録」タブからトレーニングを追加しよう！</div></div>`;
+  } else {
+    const totalSets = log.reduce((a, e) => a + (e.sets?.length || 0), 0);
+    const totalVol = log.reduce((a, e) => { if (!e.sets) return a; return a + e.sets.reduce((b, s) => b + s.weight * s.reps, 0); }, 0);
+    const prCount = log.reduce((a, e) => { if (!e.sets) return a; return a + e.sets.filter(s => s.isPR).length; }, 0);
 
-  const totalSets = log.reduce((a, e) => a + (e.sets?.length || 0), 0);
-  const totalVol = log.reduce((a, e) => { if (!e.sets) return a; return a + e.sets.reduce((b, s) => b + s.weight * s.reps, 0); }, 0);
-  const prCount = log.reduce((a, e) => { if (!e.sets) return a; return a + e.sets.filter(s => s.isPR).length; }, 0);
+    html += `
+      <div class="stats-bar">
+        <div class="stat-card"><div class="stat-value">${log.length}</div><div class="stat-label">種目</div></div>
+        <div class="stat-card"><div class="stat-value">${totalSets}</div><div class="stat-label">総セット</div></div>
+        <div class="stat-card"><div class="stat-value">${prCount > 0 ? '🔥'+prCount : totalVol > 1000 ? Math.round(totalVol/1000)+'t' : totalVol+'kg'}</div><div class="stat-label">${prCount > 0 ? 'PR達成' : '総ボリューム'}</div></div>
+      </div>
+      <div class="csv-btn-row">
+        <button class="csv-btn" onclick="downloadCSV('today')">📥 今日分CSV</button>
+        <button class="csv-btn csv-btn-all" onclick="downloadCSV('all')">📦 全履歴CSV</button>
+      </div>
+      <div id="aiPraiseArea"></div>
+      <div class="today-log">
+    `;
 
-  let html = `
-    <div class="stats-bar">
-      <div class="stat-card"><div class="stat-value">${log.length}</div><div class="stat-label">種目</div></div>
-      <div class="stat-card"><div class="stat-value">${totalSets}</div><div class="stat-label">総セット</div></div>
-      <div class="stat-card"><div class="stat-value">${prCount > 0 ? '🔥'+prCount : totalVol > 1000 ? Math.round(totalVol/1000)+'t' : totalVol+'kg'}</div><div class="stat-label">${prCount > 0 ? 'PR達成' : '総ボリューム'}</div></div>
-    </div>
-    <div class="csv-btn-row">
-      <button class="csv-btn" onclick="downloadCSV('today')">📥 今日分CSV</button>
-      <button class="csv-btn csv-btn-all" onclick="downloadCSV('all')">📦 全履歴CSV</button>
-    </div>
-    <div id="aiPraiseArea"></div>
-    <div class="today-log">
-  `;
-
-  for (const [entryIdx, entry] of log.entries()) {
-    html += `<div class="log-exercise-card"><div class="log-ex-header"><div><div class="log-ex-name">${entry.name}</div><div class="log-ex-area">${entry.area}</div></div><button class="delete-entry-btn" onclick="deleteEntry(${entryIdx})" title="削除">🗑</button></div>`;
-    if (entry.type === 'cardio') {
-      const parts = [];
-      if (entry.time) parts.push(`⏱ ${entry.time}分`);
-      if (entry.dist) parts.push(`📍 ${entry.dist}km`);
-      if (entry.level) parts.push(`Lv.${entry.level}`);
-      html += `<div class="log-set-line" style="font-weight:700">${parts.join('　')}</div>`;
-    } else {
-      (entry.sets || []).forEach((s, i) => {
-        html += `<div class="log-set-line"><div class="set-num">${i+1}</div><div style="flex:1;font-weight:700">${s.weight}kg × ${s.reps}回</div>${s.isPR ? '<span class="pr-badge">🔥 PR</span>' : ''}</div>`;
-      });
+    for (const [entryIdx, entry] of log.entries()) {
+      html += `<div class="log-exercise-card"><div class="log-ex-header"><div><div class="log-ex-name">${entry.name}</div><div class="log-ex-area">${entry.area}</div></div><button class="delete-entry-btn" onclick="deleteEntry(${entryIdx})" title="削除">🗑</button></div>`;
+      if (entry.type === 'cardio') {
+        const parts = [];
+        if (entry.time) parts.push(`⏱ ${entry.time}分`);
+        if (entry.dist) parts.push(`📍 ${entry.dist}km`);
+        if (entry.level) parts.push(`Lv.${entry.level}`);
+        html += `<div class="log-set-line" style="font-weight:700">${parts.join('　')}</div>`;
+      } else {
+        (entry.sets || []).forEach((s, i) => {
+          html += `<div class="log-set-line"><div class="set-num">${i+1}</div><div style="flex:1;font-weight:700">${s.weight}kg × ${s.reps}回</div>${s.isPR ? '<span class="pr-badge">🔥 PR</span>' : ''}</div>`;
+        });
+      }
+      if (entry.memo) html += `<div class="log-memo">📝 ${entry.memo}</div>`;
+      html += '</div>';
     }
-    if (entry.memo) html += `<div class="log-memo">📝 ${entry.memo}</div>`;
     html += '</div>';
   }
-  html += '</div>';
 
   // 食事セクション
   const todayMeals = state.meals[state.recordingDate] || [];
