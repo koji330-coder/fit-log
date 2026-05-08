@@ -493,6 +493,9 @@
   }
   .meal-select:focus { outline: none; border-color: var(--accent); }
 
+  /* DISABLED STATE */
+  button:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important; }
+
   /* FINISH BUTTON */
   .finish-btn-wrap { padding: 16px; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: linear-gradient(to top, var(--bg) 80%, transparent); }
   .finish-btn { width: 100%; padding: 18px; border-radius: 14px; border: none; background: linear-gradient(135deg, var(--success), #0aab7c); color: white; font-family: 'Noto Sans JP', sans-serif; font-size: 15px; font-weight: 900; cursor: pointer; letter-spacing: 2px; transition: all 0.2s; }
@@ -1126,7 +1129,15 @@ function renderSets() {
 // =============================================
 // SAVE EXERCISE → GAS
 // =============================================
+let isSavingExercise = false;
+
 async function saveExercise() {
+  if (isSavingExercise) return;
+  isSavingExercise = true;
+
+  const btn = document.querySelector('#step-set .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = '保存中...'; }
+
   const isCardio = MACHINES[state.selectedArea]?.type === 'cardio';
   const memo = document.getElementById('inputMemo').value.trim();
   let entry;
@@ -1135,38 +1146,46 @@ async function saveExercise() {
     const time = document.getElementById('cardioTime').value;
     const dist = document.getElementById('cardioDist').value;
     const level = document.getElementById('cardioLevel').value;
-    if (!time && !dist) { showToast('時間か距離を入力してください'); return; }
+    if (!time && !dist) {
+      showToast('時間か距離を入力してください');
+      isSavingExercise = false;
+      if (btn) { btn.disabled = false; btn.textContent = 'この種目を保存'; }
+      return;
+    }
     entry = { date: state.recordingDate, name: state.selectedExercise.name, area: MACHINES[state.selectedArea].name, type: 'cardio', time: time||null, dist: dist||null, level: level||null, memo };
   } else {
-    if (state.currentSets.length === 0) { showToast('セットを追加してください'); return; }
+    if (state.currentSets.length === 0) {
+      showToast('セットを追加してください');
+      isSavingExercise = false;
+      if (btn) { btn.disabled = false; btn.textContent = 'この種目を保存'; }
+      return;
+    }
     entry = { date: state.recordingDate, name: state.selectedExercise.name, area: MACHINES[state.selectedArea].name, part: state.selectedExercise.part, type: 'strength', sets: state.currentSets, memo };
   }
 
-  // Update local state immediately
-  if (!state.history[state.recordingDate]) state.history[state.recordingDate] = [];
-  state.history[state.recordingDate].push(entry);
-
-  // Send to GAS
   try {
-    await gasPost({ action: 'save', entries: [entry] });
-    // PR更新があれば特別音、なければ通常保存音
+    // GAS成功後にstateへpush（順番重要）
+    const result = await gasPost({ action: 'save', entries: [entry] });
+    if (result.status !== 'ok') throw new Error(result.message || '保存失敗');
+
+    if (!state.history[state.recordingDate]) state.history[state.recordingDate] = [];
+    state.history[state.recordingDate].push(entry);
+
     const hasPR = entry.sets?.some(s => s.isPR);
-    if (hasPR) {
-      soundPR();
-      showToast('🔥 PR更新！すごい！');
-    } else {
-      soundSave();
-      showToast('✅ 保存しました！');
-    }
+    if (hasPR) { soundPR(); showToast('🔥 PR更新！すごい！'); }
+    else { soundSave(); showToast('✅ 保存しました！'); }
+
+    updateFinishBtn();
+    state.currentSets = [];
+    document.getElementById('step-set').style.display = 'none';
+    document.getElementById('step-exercise').style.display = 'none';
+    document.getElementById('step-area').style.display = 'block';
   } catch(e) {
     showToast('⚠️ 保存失敗（通信エラー）', true);
+    if (btn) { btn.disabled = false; btn.textContent = 'この種目を保存'; }
+  } finally {
+    isSavingExercise = false;
   }
-
-  updateFinishBtn();
-  state.currentSets = [];
-  document.getElementById('step-set').style.display = 'none';
-  document.getElementById('step-exercise').style.display = 'none';
-  document.getElementById('step-area').style.display = 'block';
 }
 
 // =============================================
@@ -1277,27 +1296,30 @@ function renderToday() {
 // =============================================
 // DELETE ENTRY
 // =============================================
-async function deleteEntry(idx) {
-  if (!confirm('この種目の記録を削除しますか？')) return;
-  const date = state.recordingDate;
+let isDeletingEntry = false;
 
-  // 削除前に残すエントリをコピー
+async function deleteEntry(idx) {
+  if (isDeletingEntry) return;
+  if (!confirm('この種目の記録を削除しますか？')) return;
+  isDeletingEntry = true;
+
+  const date = state.recordingDate;
   const remaining = (state.history[date] || []).filter((_, i) => i !== idx);
 
-  // ローカル状態を更新
   if (remaining.length === 0) {
     delete state.history[date];
   } else {
     state.history[date] = remaining;
   }
 
-  // GASに残りエントリで上書き（空なら削除のみ）
   try {
     const entries = remaining.map(e => ({ ...e, date }));
     await gasPost({ action: 'saveDay', date, entries });
     showToast('🗑 削除しました');
   } catch(e) {
     showToast('削除失敗（通信エラー）', true);
+  } finally {
+    isDeletingEntry = false;
   }
 
   renderToday();
@@ -1314,7 +1336,14 @@ function updateFinishBtn() {
   wrap.style.display = (log.length > 0 && screen?.id === 'screen-today') ? 'block' : 'none';
 }
 
+let isFinishing = false;
+
 async function finishWorkout() {
+  if (isFinishing) return;
+  isFinishing = true;
+
+  const finishBtn = document.querySelector('.finish-btn');
+  if (finishBtn) { finishBtn.disabled = true; finishBtn.textContent = '⏳ 生成中...'; }
   soundComplete();
   document.getElementById('finishBtnWrap').style.display = 'none';
 
@@ -1402,6 +1431,8 @@ ${menuSummary}
         </div>
         <div class="ai-text">今日もよく頑張ったじゃん。まぁ、続けることが大事だから。次も来てね。…べ、別に心配してるわけじゃないけど💪</div>
       </div>`;
+  } finally {
+    isFinishing = false;
   }
 }
 
@@ -1733,7 +1764,15 @@ function compressImage(file, maxWidth, quality) {
   });
 }
 
+let isSavingMeal = false;
+
 async function saveMealRecord() {
+  if (isSavingMeal) return;
+  isSavingMeal = true;
+
+  const btn = document.querySelector('#mealStep2 .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = '保存中...'; }
+
   const timeStr = getCurrentTimeStr();
   const meal = {
     date: state.recordingDate,
@@ -1747,26 +1786,31 @@ async function saveMealRecord() {
     memo: document.getElementById('mealMemo').value,
   };
 
-  // ローカル状態を更新
-  if (!state.meals[meal.date]) state.meals[meal.date] = [];
-  state.meals[meal.date].push(meal);
-
-  // GASに保存
   try {
-    await gasPost({ action: 'saveMeal', meal });
+    // GAS成功後にstateへpush
+    const result = await gasPost({ action: 'saveMeal', meal });
+    if (result.status !== 'ok') throw new Error(result.message || '保存失敗');
+
+    if (!state.meals[meal.date]) state.meals[meal.date] = [];
+    state.meals[meal.date].push(meal);
     showToast('🍽️ 食事を記録しました！');
+    closeMealModal();
+    renderToday();
   } catch(e) {
     showToast('保存失敗', true);
+    if (btn) { btn.disabled = false; btn.textContent = '保存'; }
+  } finally {
+    isSavingMeal = false;
   }
-
-  closeMealModal();
-  renderToday();
 }
 
-async function deleteMealRecord(date, time) {
-  if (!confirm('この食事記録を削除しますか？')) return;
+let isDeletingMeal = false;
 
-  // 型の不一致を防ぐためStringで比較
+async function deleteMealRecord(date, time) {
+  if (isDeletingMeal) return;
+  if (!confirm('この食事記録を削除しますか？')) return;
+  isDeletingMeal = true;
+
   state.meals[date] = (state.meals[date] || []).filter(m => String(m.time) !== String(time));
   if (state.meals[date].length === 0) delete state.meals[date];
 
@@ -1775,6 +1819,8 @@ async function deleteMealRecord(date, time) {
     showToast('🗑 削除しました');
   } catch(e) {
     showToast('削除失敗', true);
+  } finally {
+    isDeletingMeal = false;
   }
   renderToday();
 }
