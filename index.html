@@ -605,6 +605,72 @@
   </div>
 </div>
 
+<!-- MEAL EDIT MODAL -->
+<div class="modal-overlay hidden" id="mealEditModal">
+  <div class="meal-modal-box">
+    <div class="meal-modal-title">✏️ 食事記録を編集</div>
+    <input type="hidden" id="editMealDate">
+    <input type="hidden" id="editMealTime">
+    <div class="input-group" style="margin-bottom:10px">
+      <div class="input-label">食事タイプ</div>
+      <select class="meal-select" id="editMealType">
+        <option value="朝食">🌅 朝食</option>
+        <option value="昼食">☀️ 昼食</option>
+        <option value="間食">🍪 間食</option>
+        <option value="夕食">🌙 夕食</option>
+        <option value="夜食">🌃 夜食</option>
+      </select>
+    </div>
+    <div class="input-group" style="margin-bottom:10px">
+      <div class="input-label">料理名</div>
+      <input class="input-field" type="text" id="editMealFoodName" style="text-align:left;font-size:14px">
+    </div>
+    <div class="input-row" style="margin-bottom:10px">
+      <div class="input-group">
+        <div class="input-label">カロリー</div>
+        <input class="input-field" type="number" id="editMealKcal" inputmode="numeric">
+      </div>
+      <div class="input-group">
+        <div class="input-label">タンパク質g</div>
+        <input class="input-field" type="number" id="editMealProtein" inputmode="numeric">
+      </div>
+    </div>
+    <div class="input-row" style="margin-bottom:10px">
+      <div class="input-group">
+        <div class="input-label">脂質g</div>
+        <input class="input-field" type="number" id="editMealFat" inputmode="numeric">
+      </div>
+      <div class="input-group">
+        <div class="input-label">炭水化物g</div>
+        <input class="input-field" type="number" id="editMealCarb" inputmode="numeric">
+      </div>
+    </div>
+    <div class="input-group" style="margin-bottom:16px">
+      <div class="input-label">メモ</div>
+      <textarea class="memo-field" id="editMealMemo"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary btn-sm" onclick="closeMealEditModal()">キャンセル</button>
+      <button class="btn btn-primary btn-sm" onclick="saveMealEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- CALENDAR REVIEW MODAL -->
+<div class="modal-overlay hidden" id="calReviewModal">
+  <div class="meal-modal-box">
+    <div class="meal-modal-title">📅 <span id="calReviewDateLabel"></span>を振り返る</div>
+    <div class="input-group" style="margin-bottom:12px">
+      <div class="input-label">振り返りトレーナー</div>
+      <select class="meal-select" id="calReviewTrainer"></select>
+    </div>
+    <div id="calReviewResult">
+      <button class="btn btn-primary" onclick="doCalReview()" id="calReviewBtn">🌸 振り返りコメントをもらう</button>
+    </div>
+    <button class="btn btn-secondary" style="margin-top:12px" onclick="closeCalReviewModal()">閉じる</button>
+  </div>
+</div>
+
 <!-- DATE PICKER MODAL -->
 <div class="modal-overlay hidden" id="dateModal">
   <div class="modal-box">
@@ -809,7 +875,9 @@ let state = {
   history: {},
   menus: {},
   activeMenu: null,
-  selectedTrainer: null,
+  trainerComplete: null,   // 🏁 筋トレ完了コメント用
+  trainerReview: null,     // 📅 カレンダー振り返り用
+  trainerMeal: null,       // 🍽️ 食事分析用
   trainerList: [],
   meals: {},
   profile: { nickname: 'ガッキー', height: '', weight: '', gender: '', age: '', goal: '細マッチョ（体脂肪15%以下）' },
@@ -868,8 +936,9 @@ async function init() {
   document.getElementById('loadingOverlay').classList.add('hidden');
   // 保存済みのトレーナー設定を復元
   try {
-    const saved = localStorage.getItem('fitlog_trainer');
-    if (saved) state.selectedTrainer = saved;
+    state.trainerComplete = localStorage.getItem('fitlog_trainer_complete') || null;
+    state.trainerReview   = localStorage.getItem('fitlog_trainer_review') || null;
+    state.trainerMeal     = localStorage.getItem('fitlog_trainer_meal') || null;
   } catch(e) {}
   updateHeaderDate();
   updateRecDateBanner();
@@ -1252,14 +1321,12 @@ async function finishWorkout() {
   const log = state.history[state.recordingDate] || [];
 
   // 設定で選んだトレーナーを優先、なければメニューのトレーナーを使う
-  let trainerName = state.selectedTrainer;
+  let trainerName = state.trainerComplete;
   const activeKey = state.activeMenu
     || (state.menus['menu_sunny'] ? 'menu_sunny' : null)
     || (state.menus['menu_rainy'] ? 'menu_rainy' : null);
   const menu = activeKey ? state.menus[activeKey] : null;
-  if (!trainerName) {
-    trainerName = menu?.trainer || '佐々木舞香';
-  }
+  if (!trainerName) trainerName = menu?.trainer || '佐々木舞香';
 
   const praiseArea = document.getElementById('aiPraiseArea');
   praiseArea.innerHTML = `
@@ -1464,13 +1531,15 @@ function renderCalendar() {
       for (const m of meals) {
         html += `
           <div class="cal-detail-ex">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="flex:1">
                 <span style="font-size:11px;color:var(--text-dim)">${m.mealType} ${m.time}</span>
                 <div class="cal-detail-ex-name">${m.foodName}</div>
+                <div style="font-size:11px;color:var(--text-dim);margin-top:2px">🔥${m.kcal}kcal P:${m.protein} F:${m.fat} C:${m.carb}</div>
               </div>
-              <div style="text-align:right;font-size:11px;color:var(--text-dim)">
-                🔥${m.kcal}kcal<br>P:${m.protein} F:${m.fat} C:${m.carb}
+              <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px">
+                <button onclick="openMealEditModal('${calState.selectedDate}','${m.time}')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-size:11px;padding:4px 8px;cursor:pointer">✏️</button>
+                <button onclick="deleteMealFromCalendar('${calState.selectedDate}','${m.time}')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-size:11px;padding:4px 8px;cursor:pointer">🗑</button>
               </div>
             </div>
             ${m.memo ? `<div class="log-memo" style="margin-top:4px">📝 ${m.memo}</div>` : ''}
@@ -1488,7 +1557,11 @@ function renderCalendar() {
       `;
     }
 
-    html += `</div></div>`;
+    html += `</div></div>
+      <button class="btn btn-primary" style="margin-top:8px" onclick="openCalReviewModal('${calState.selectedDate}')">
+        🌸 この日を振り返る
+      </button>
+    `;
   }
 
   container.innerHTML = html;
@@ -1592,7 +1665,7 @@ async function doAnalyzeMeal(base64, note) {
 
   try {
     const activeMenu = state.activeMenu ? state.menus[state.activeMenu] : null;
-    const trainerName = state.selectedTrainer || activeMenu?.trainer || '白石ナナ';
+    const trainerName = state.trainerMeal || activeMenu?.trainer || '白石ナナ';
     const result = await gasPost({
       action: 'analyzeMeal',
       imageBase64: base64,
@@ -1693,16 +1766,180 @@ async function saveMealRecord() {
 async function deleteMealRecord(date, time) {
   if (!confirm('この食事記録を削除しますか？')) return;
 
-  state.meals[date] = (state.meals[date] || []).filter(m => m.time !== time);
+  // 型の不一致を防ぐためStringで比較
+  state.meals[date] = (state.meals[date] || []).filter(m => String(m.time) !== String(time));
   if (state.meals[date].length === 0) delete state.meals[date];
 
   try {
-    await gasPost({ action: 'deleteMeal', date, time });
+    await gasPost({ action: 'deleteMeal', date, time: String(time) });
     showToast('🗑 削除しました');
   } catch(e) {
     showToast('削除失敗', true);
   }
   renderToday();
+}
+
+// =============================================
+// MEAL EDIT (from calendar)
+// =============================================
+function openMealEditModal(date, time) {
+  const meals = state.meals[date] || [];
+  const meal = meals.find(m => String(m.time) === String(time));
+  if (!meal) return;
+
+  document.getElementById('editMealDate').value = date;
+  document.getElementById('editMealTime').value = time;
+  document.getElementById('editMealFoodName').value = meal.foodName || '';
+  document.getElementById('editMealKcal').value = meal.kcal || '';
+  document.getElementById('editMealProtein').value = meal.protein || '';
+  document.getElementById('editMealFat').value = meal.fat || '';
+  document.getElementById('editMealCarb').value = meal.carb || '';
+  document.getElementById('editMealMemo').value = meal.memo || '';
+
+  const sel = document.getElementById('editMealType');
+  for (let i = 0; i < sel.options.length; i++) {
+    if (sel.options[i].value === meal.mealType) { sel.selectedIndex = i; break; }
+  }
+
+  document.getElementById('mealEditModal').classList.remove('hidden');
+}
+
+function closeMealEditModal() {
+  document.getElementById('mealEditModal').classList.add('hidden');
+}
+
+async function saveMealEdit() {
+  const date = document.getElementById('editMealDate').value;
+  const time = document.getElementById('editMealTime').value;
+  const meals = state.meals[date] || [];
+  const idx = meals.findIndex(m => String(m.time) === String(time));
+  if (idx === -1) return;
+
+  const updated = {
+    ...meals[idx],
+    mealType: document.getElementById('editMealType').value,
+    foodName: document.getElementById('editMealFoodName').value,
+    kcal: parseInt(document.getElementById('editMealKcal').value) || 0,
+    protein: parseInt(document.getElementById('editMealProtein').value) || 0,
+    fat: parseInt(document.getElementById('editMealFat').value) || 0,
+    carb: parseInt(document.getElementById('editMealCarb').value) || 0,
+    memo: document.getElementById('editMealMemo').value,
+  };
+
+  // ローカル更新
+  state.meals[date][idx] = updated;
+
+  // GAS：削除して再保存
+  try {
+    await gasPost({ action: 'deleteMeal', date, time: String(time) });
+    await gasPost({ action: 'saveMeal', meal: { ...updated, date } });
+    showToast('✅ 食事記録を更新しました');
+  } catch(e) {
+    showToast('更新失敗', true);
+  }
+
+  closeMealEditModal();
+  renderCalendar();
+  if (date === state.recordingDate) renderToday();
+}
+
+async function deleteMealFromCalendar(date, time) {
+  if (!confirm('この食事記録を削除しますか？')) return;
+  state.meals[date] = (state.meals[date] || []).filter(m => String(m.time) !== String(time));
+  if (state.meals[date].length === 0) delete state.meals[date];
+  try {
+    await gasPost({ action: 'deleteMeal', date, time: String(time) });
+    showToast('🗑 削除しました');
+  } catch(e) {
+    showToast('削除失敗', true);
+  }
+  renderCalendar();
+  if (date === state.recordingDate) renderToday();
+}
+
+// =============================================
+// CALENDAR REVIEW (AI褒め)
+// =============================================
+function openCalReviewModal(date) {
+  document.getElementById('calReviewDateLabel').textContent = formatDate(date);
+  document.getElementById('calReviewModal').classList.remove('hidden');
+  document.getElementById('calReviewResult').innerHTML = `
+    <button class="btn btn-primary" onclick="doCalReview('${date}')" id="calReviewBtn">🌸 振り返りコメントをもらう</button>
+  `;
+
+  // トレーナー選択肢を設定
+  const sel = document.getElementById('calReviewTrainer');
+  sel.innerHTML = `<option value="">佐々木舞香（デフォルト）</option>` +
+    (state.trainerList.length > 0 ? state.trainerList : []).map(t =>
+      `<option value="${t.name}" ${state.trainerReview === t.name ? 'selected' : ''}>${t.name}</option>`
+    ).join('');
+  if (state.trainerReview) sel.value = state.trainerReview;
+}
+
+function closeCalReviewModal() {
+  document.getElementById('calReviewModal').classList.add('hidden');
+}
+
+async function doCalReview(date) {
+  const btn = document.getElementById('calReviewBtn');
+  btn.textContent = '⏳ 生成中...';
+  btn.disabled = true;
+
+  const trainerName = document.getElementById('calReviewTrainer').value || state.trainerReview || '佐々木舞香';
+  const log = state.history[date] || [];
+  const meals = state.meals[date] || [];
+  const nickname = state.profile?.nickname || 'ガッキー';
+
+  const recordSummary = log.map(e => {
+    if (e.type === 'cardio') return `${e.name}: ${e.time||''}分`;
+    return `${e.name}(${e.part||''}): ${(e.sets||[]).map((s,i)=>`セット${i+1}: ${s.weight}kg×${s.reps}回${s.isPR?' PR🔥':''}`).join(', ')}${e.memo?' メモ:'+e.memo:''}`;
+  }).join('\n') || 'なし';
+
+  const mealSummary = meals.map(m =>
+    `${m.mealType}(${m.time}): ${m.foodName} / ${m.kcal}kcal P:${m.protein}g F:${m.fat}g C:${m.carb}g${m.memo?' メモ:'+m.memo:''}`
+  ).join('\n') || 'なし';
+
+  const prompt = `あなたは＝LOVEの${trainerName}です。以下のキャラクター特性に従って話してください。
+
+【キャラクター特性】
+{{TRAINER_PROFILE}}
+
+【ユーザー情報】
+{{USER_PROFILE}}
+
+${nickname}の${formatDate(date)}の筋トレと食事を振り返って、${trainerName}らしいキャラクターで以下をセットで返してください：
+
+①筋トレの頑張りへの褒め（PRがあれば大げさに。メモに課題があれば次回アドバイスも）
+②食事の栄養バランス評価（筋トレ目標との相性を含めて）
+③一言総評（その日全体を振り返って）
+
+【${formatDate(date)}の筋トレ記録】
+${recordSummary}
+
+【${formatDate(date)}の食事記録】
+${mealSummary}
+
+250〜300文字程度で、キャラクター特性に忠実に返してください。呼びかけは「${nickname}」を使ってください。`;
+
+  try {
+    const result = await gasPost({ action: 'getAiComment', prompt, trainerName });
+    const text = result.status === 'ok' ? result.text : '今日もよく頑張りました！';
+    document.getElementById('calReviewResult').innerHTML = `
+      <div class="ai-praise-card" style="margin-bottom:12px">
+        <div class="ai-praise-header">
+          <div class="ai-icon">🌸</div>
+          <div><div class="ai-label">AI TRAINER</div><div class="ai-name">${trainerName}より</div></div>
+        </div>
+        <div class="ai-text">${text.replace(/\n/g,'<br>')}</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="doCalReview('${date}')">🔄 もう一度</button>
+    `;
+  } catch(e) {
+    document.getElementById('calReviewResult').innerHTML = `
+      <button class="btn btn-primary" onclick="doCalReview('${date}')" id="calReviewBtn">🌸 振り返りコメントをもらう</button>
+    `;
+    showToast('通信エラー', true);
+  }
 }
 
 // =============================================
@@ -2114,33 +2351,12 @@ function renderSettings() {
 
   html += `
     <div class="settings-section">
-      <div class="settings-section-title">🌸 褒めトレーナーを選ぶ</div>
-      <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;line-height:1.6">
-        トレーニング完了時に褒めてくれる人を選べます。<br>
-        メニューのトレーナーとは独立して設定できます。
-      </div>
-      <div style="margin-bottom:10px">
-        <button class="trainer-select-btn ${!currentTrainer ? 'active' : ''}"
-          onclick="selectTrainer(null)" style="width:100%;margin-bottom:8px">
-          <div class="t-name">🔀 メニューのトレーナーに従う（デフォルト）</div>
-          <div class="t-tone">晴れ/雨のメニューに設定されたトレーナーが担当</div>
-        </button>
-      </div>
-      <div class="trainer-grid">
+      <div class="settings-section-title">🌸 トレーナー設定</div>
+      ${renderTrainerSelector('complete', '🏁 筋トレ完了コメント', state.trainerComplete, trainers)}
+      ${renderTrainerSelector('review', '📅 カレンダー振り返り', state.trainerReview, trainers)}
+      ${renderTrainerSelector('meal', '🍽️ 食事分析コメント', state.trainerMeal, trainers)}
+    </div>
   `;
-
-  trainers.forEach(t => {
-    const isActive = currentTrainer === t.name;
-    html += `
-      <button class="trainer-select-btn ${isActive ? 'active' : ''}" onclick="selectTrainer('${t.name}')">
-        <span class="t-check">${isActive ? '✅' : ''}</span>
-        <div class="t-name">${t.name}</div>
-        <div class="t-tone">${t.tone}</div>
-      </button>
-    `;
-  });
-
-  html += `</div></div>`;
 
   // 次回メニューDLセクション
   html += `
@@ -2164,11 +2380,34 @@ function renderSettings() {
   container.innerHTML = html;
 }
 
-function selectTrainer(name) {
-  state.selectedTrainer = name;
-  try { localStorage.setItem('fitlog_trainer', name || ''); } catch(e) {}
-  renderSettings();
-  showToast(name ? `✅ ${name}を選択しました` : '✅ メニューのトレーナーに従います');
+function renderTrainerSelector(role, label, currentVal, trainers) {
+  const defaultLabel = role === 'complete' ? 'メニューのトレーナーに従う' :
+                       role === 'meal' ? '白石ナナ（デフォルト）' : '佐々木舞香（デフォルト）';
+  let html = `
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px">${label}</div>
+      <select class="meal-select" onchange="selectTrainer('${role}', this.value)" style="margin-bottom:0">
+        <option value="" ${!currentVal ? 'selected' : ''}>${defaultLabel}</option>
+        ${trainers.map(t => `<option value="${t.name}" ${currentVal === t.name ? 'selected' : ''}>${t.name}</option>`).join('')}
+      </select>
+    </div>
+  `;
+  return html;
+}
+
+function selectTrainer(role, name) {
+  const val = name || null;
+  if (role === 'complete') {
+    state.trainerComplete = val;
+    try { localStorage.setItem('fitlog_trainer_complete', val || ''); } catch(e) {}
+  } else if (role === 'review') {
+    state.trainerReview = val;
+    try { localStorage.setItem('fitlog_trainer_review', val || ''); } catch(e) {}
+  } else if (role === 'meal') {
+    state.trainerMeal = val;
+    try { localStorage.setItem('fitlog_trainer_meal', val || ''); } catch(e) {}
+  }
+  showToast('✅ トレーナーを設定しました');
 }
 
 async function saveProfileSettings() {
