@@ -1414,32 +1414,80 @@ function renderCalendar() {
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const hasLog = !!(state.history[dateStr]?.length);
+    const hasMeal = !!(state.meals[dateStr]?.length);
+    const hasData = hasLog || hasMeal;
     const isToday = dateStr === todayStr;
     const isSelected = dateStr === calState.selectedDate;
-    const cls = ['cal-cell', hasLog?'has-log':'', isToday?'today':'', isSelected?'selected':''].filter(Boolean).join(' ');
-    html += `<div class="${cls}" onclick="calSelectDate('${dateStr}')">${d}${hasLog?'<div class="cal-dot"></div>':''}</div>`;
+    const cls = ['cal-cell', hasData?'has-log':'', isToday?'today':'', isSelected?'selected':''].filter(Boolean).join(' ');
+    html += `<div class="${cls}" onclick="calSelectDate('${dateStr}')">${d}${hasData?'<div class="cal-dot"></div>':''}</div>`;
   }
 
   html += `</div>`;
 
-  if (calState.selectedDate && state.history[calState.selectedDate]?.length) {
-    const log = state.history[calState.selectedDate];
+  if (calState.selectedDate && (state.history[calState.selectedDate]?.length || state.meals[calState.selectedDate]?.length)) {
+    const log = state.history[calState.selectedDate] || [];
+    const meals = state.meals[calState.selectedDate] || [];
+
     html += `<div class="cal-detail"><div class="cal-detail-date">📅 ${formatDate(calState.selectedDate)}</div><div class="cal-detail-body">`;
-    for (const entry of log) {
-      html += `<div class="cal-detail-ex"><div class="cal-detail-ex-name">${entry.name} <span style="color:var(--text-dim);font-size:11px">${entry.area}</span></div><div class="cal-detail-chips">`;
-      if (entry.type === 'cardio') {
-        const parts = [];
-        if (entry.time) parts.push(`⏱${entry.time}分`);
-        if (entry.dist) parts.push(`📍${entry.dist}km`);
-        if (entry.level) parts.push(`Lv.${entry.level}`);
-        html += `<span class="history-set-chip">${parts.join(' ')}</span>`;
-      } else {
-        (entry.sets||[]).forEach(s => { html += `<span class="history-set-chip ${s.isPR?'is-pr':''}">${s.weight}kg×${s.reps}${s.isPR?'🔥':''}</span>`; });
+
+    // 筋トレ記録
+    if (log.length > 0) {
+      html += `<div style="font-size:11px;font-weight:900;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">💪 筋トレ</div>`;
+      for (const entry of log) {
+        html += `<div class="cal-detail-ex"><div class="cal-detail-ex-name">${entry.name} <span style="color:var(--text-dim);font-size:11px">${entry.area}</span></div><div class="cal-detail-chips">`;
+        if (entry.type === 'cardio') {
+          const parts = [];
+          if (entry.time) parts.push(`⏱${entry.time}分`);
+          if (entry.dist) parts.push(`📍${entry.dist}km`);
+          if (entry.level) parts.push(`Lv.${entry.level}`);
+          html += `<span class="history-set-chip">${parts.join(' ')}</span>`;
+        } else {
+          (entry.sets||[]).forEach(s => { html += `<span class="history-set-chip ${s.isPR?'is-pr':''}">${s.weight}kg×${s.reps}${s.isPR?'🔥':''}</span>`; });
+        }
+        html += `</div>`;
+        if (entry.memo) html += `<div class="log-memo" style="margin-top:6px">📝 ${entry.memo}</div>`;
+        html += `</div>`;
       }
-      html += `</div>`;
-      if (entry.memo) html += `<div class="log-memo" style="margin-top:6px">📝 ${entry.memo}</div>`;
-      html += `</div>`;
     }
+
+    // 食事記録
+    if (meals.length > 0) {
+      if (log.length > 0) html += `<div style="height:1px;background:var(--border);margin:10px 0"></div>`;
+      html += `<div style="font-size:11px;font-weight:900;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">🍽️ 食事</div>`;
+
+      // 合計PFC
+      const totalKcal = meals.reduce((a, m) => a + (m.kcal||0), 0);
+      const totalP = meals.reduce((a, m) => a + (m.protein||0), 0);
+      const totalF = meals.reduce((a, m) => a + (m.fat||0), 0);
+      const totalC = meals.reduce((a, m) => a + (m.carb||0), 0);
+
+      for (const m of meals) {
+        html += `
+          <div class="cal-detail-ex">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <span style="font-size:11px;color:var(--text-dim)">${m.mealType} ${m.time}</span>
+                <div class="cal-detail-ex-name">${m.foodName}</div>
+              </div>
+              <div style="text-align:right;font-size:11px;color:var(--text-dim)">
+                🔥${m.kcal}kcal<br>P:${m.protein} F:${m.fat} C:${m.carb}
+              </div>
+            </div>
+            ${m.memo ? `<div class="log-memo" style="margin-top:4px">📝 ${m.memo}</div>` : ''}
+          </div>
+        `;
+      }
+
+      html += `
+        <div style="display:flex;gap:12px;padding:8px 0;font-size:12px;font-weight:700;color:var(--success)">
+          <span>合計 ${totalKcal}kcal</span>
+          <span>P:${totalP}g</span>
+          <span>F:${totalF}g</span>
+          <span>C:${totalC}g</span>
+        </div>
+      `;
+    }
+
     html += `</div></div>`;
   }
 
@@ -1455,7 +1503,8 @@ function calNav(dir) {
 }
 
 function calSelectDate(dateStr) {
-  if (!state.history[dateStr]?.length) return;
+  const hasData = !!(state.history[dateStr]?.length) || !!(state.meals[dateStr]?.length);
+  if (!hasData) return;
   calState.selectedDate = calState.selectedDate === dateStr ? null : dateStr;
   renderCalendar();
 }
@@ -1542,8 +1591,8 @@ async function doAnalyzeMeal(base64, note) {
   document.getElementById('mealStep2').style.display = 'none';
 
   try {
-    const trainerName = state.selectedTrainer ||
-      (state.menus[state.activeMenu]?.trainer) || '白石ナナ';
+    const activeMenu = state.activeMenu ? state.menus[state.activeMenu] : null;
+    const trainerName = state.selectedTrainer || activeMenu?.trainer || '白石ナナ';
     const result = await gasPost({
       action: 'analyzeMeal',
       imageBase64: base64,
