@@ -1622,34 +1622,11 @@ function renderMenu() {
   const hasSunny = !!state.menus['menu_sunny'];
   const hasRainy = !!state.menus['menu_rainy'];
 
-  if (!hasSunny && !hasRainy) {
-    container.innerHTML = `
-      <div class="import-btn-wrap">
-        <button class="import-btn" onclick="importMenu()">📥 DriveからメニューCSVを取込</button>
-      </div>
-      <div class="empty-state">
-        <div class="empty-icon">🎯</div>
-        <div class="empty-title">メニューがありません</div>
-        <div class="empty-desc">DriveのMenuフォルダに<br>menu_sunny.csv / menu_rainy.csv を置いて<br>取込ボタンを押してください</div>
-      </div>
-    `;
-    return;
-  }
-
-  if (!state.activeMenu) state.activeMenu = hasSunny ? 'menu_sunny' : 'menu_rainy';
-  const menu = state.menus[state.activeMenu];
-  if (!menu) return;
-
-  const todayLog = state.history[state.recordingDate] || [];
-  const doneNames = new Set(todayLog.map(e => e.name));
-  const doneCount = menu.items.filter(i => doneNames.has(i.name)).length;
-  const pct = menu.items.length > 0 ? Math.round(doneCount / menu.items.length * 100) : 0;
-
-  let html = `
+  // AI生成UIは常に表示
+  const aiMenuHtml = `
     <div class="import-btn-wrap">
       <button class="import-btn" onclick="importMenu()">📥 DriveからメニューCSVを取込</button>
     </div>
-
     <div class="settings-card" style="margin-bottom:16px">
       <div class="settings-card-title">🤖 AIにメニューを作ってもらう</div>
       <div class="settings-card-desc">直近3回の記録を自動で参照して最適なメニューを生成します。</div>
@@ -1670,7 +1647,32 @@ function renderMenu() {
       </div>
       <button class="btn btn-primary" onclick="generateAiMenu()" id="aiMenuBtn">🤖 AIメニューを生成</button>
     </div>
+  `;
 
+  if (!hasSunny && !hasRainy) {
+    container.innerHTML = aiMenuHtml + `
+      <div class="empty-state">
+        <div class="empty-icon">🎯</div>
+        <div class="empty-title">メニューがありません</div>
+        <div class="empty-desc">上のボタンでAIに作ってもらうか<br>DriveからCSVを取込んでください</div>
+      </div>
+    `;
+    return;
+  }
+
+  if (!state.activeMenu) state.activeMenu = hasSunny ? 'menu_sunny' : 'menu_rainy';
+  const menu = state.menus[state.activeMenu];
+  if (!menu) {
+    container.innerHTML = aiMenuHtml;
+    return;
+  }
+
+  const todayLog = state.history[state.recordingDate] || [];
+  const doneNames = new Set(todayLog.map(e => e.name));
+  const doneCount = menu.items.filter(i => doneNames.has(i.name)).length;
+  const pct = menu.items.length > 0 ? Math.round(doneCount / menu.items.length * 100) : 0;
+
+  let html = aiMenuHtml + `
     <div class="menu-type-btns">
       <button class="menu-type-btn ${state.activeMenu === 'menu_sunny' ? 'active' : ''}" onclick="switchMenu('menu_sunny')">☀️ 晴れの日</button>
       <button class="menu-type-btn ${state.activeMenu === 'menu_rainy' ? 'active' : ''}" onclick="switchMenu('menu_rainy')">🌧️ 雨の日</button>
