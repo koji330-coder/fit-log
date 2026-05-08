@@ -528,11 +528,18 @@
     <div id="mealModalContent">
       <!-- Step1: 画像選択 -->
       <div id="mealStep1">
-        <input type="file" id="mealImageInput" accept="image/*" style="display:none" onchange="handleMealImage(event)">
+        <input type="file" id="mealImageInput" accept="image/*" style="display:none" onchange="handleMealImageSelected(event)">
         <div class="btn-row" style="margin-bottom:12px">
           <button class="btn btn-primary btn-sm" onclick="document.getElementById('mealImageInput').click()">📷 写真を選ぶ</button>
         </div>
         <img id="mealImgPreview" class="meal-img-preview">
+        <div id="mealStep1Note" style="display:none">
+          <div class="input-group" style="margin-bottom:10px;margin-top:4px">
+            <div class="input-label">補足コメント（任意）</div>
+            <textarea class="memo-field" id="mealNote1" placeholder="例：カリフラワーライス半分混ぜ、鶏肉は皮なし など"></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="analyzeMealWithNote()" id="mealAnalyzeBtn">🔍 分析する</button>
+        </div>
         <div id="mealAnalyzing" class="meal-analyzing" style="display:none">
           <div class="ai-loading" style="justify-content:center;margin-bottom:8px">
             <div class="dot"></div><div class="dot"></div><div class="dot"></div>
@@ -586,6 +593,11 @@
         <div class="btn-row">
           <button class="btn btn-secondary btn-sm" onclick="resetMealModal()">← 撮り直す</button>
           <button class="btn btn-primary btn-sm" onclick="saveMealRecord()">保存</button>
+        </div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+          <div class="input-label" style="margin-bottom:6px">補足して再判定</div>
+          <textarea class="memo-field" id="mealNote2" placeholder="例：ご飯は少なめ、具材に豆腐追加 など"></textarea>
+          <button class="btn btn-secondary" style="margin-top:8px" onclick="reanalyzeMeal()" id="mealReanalyzeBtn">🔄 再判定する</button>
         </div>
       </div>
     </div>
@@ -1480,74 +1492,103 @@ function resetMealModal() {
   document.getElementById('mealStep1').style.display = 'block';
   document.getElementById('mealStep2').style.display = 'none';
   document.getElementById('mealAnalyzing').style.display = 'none';
+  document.getElementById('mealStep1Note').style.display = 'none';
   document.getElementById('mealImgPreview').style.display = 'none';
   document.getElementById('mealImageInput').value = '';
+  document.getElementById('mealNote1').value = '';
+  window._mealImageBase64 = null;
 }
 
-async function handleMealImage(event) {
+// 画像選択後：プレビュー表示＋補足欄を出す
+async function handleMealImageSelected(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  // プレビュー表示
   const reader = new FileReader();
   reader.onload = async (e) => {
     document.getElementById('mealImgPreview').src = e.target.result;
     document.getElementById('mealImgPreview').style.display = 'block';
-    document.getElementById('mealAnalyzing').style.display = 'block';
+    document.getElementById('mealStep1Note').style.display = 'block';
 
-    // Canvas で圧縮
-    const base64 = await compressImage(file, 800, 0.7);
-
-    // GAS経由でGemini分析
-    try {
-      const trainerName = state.selectedTrainer ||
-        (state.menus[state.activeMenu]?.trainer) || '白石ナナ';
-      const result = await gasPost({
-        action: 'analyzeMeal',
-        imageBase64: base64,
-        trainerName,
-      });
-
-      document.getElementById('mealAnalyzing').style.display = 'none';
-
-      if (result.status === 'ok') {
-        const r = result.result;
-        const timeStr = getCurrentTimeStr();
-        const mealType = getMealType(timeStr);
-
-        // 結果を表示
-        document.getElementById('mealImgPreview2').src = e.target.result;
-        document.getElementById('mealResultGrid').innerHTML = `
-          <div class="meal-result-item"><div class="meal-result-val">${r.kcal}</div><div class="meal-result-label">KCAL</div></div>
-          <div class="meal-result-item"><div class="meal-result-val">${r.protein}g</div><div class="meal-result-label">PROTEIN</div></div>
-          <div class="meal-result-item"><div class="meal-result-val">${r.fat}g</div><div class="meal-result-label">FAT</div></div>
-          <div class="meal-result-item"><div class="meal-result-val">${r.carb}g</div><div class="meal-result-label">CARB</div></div>
-        `;
-        document.getElementById('mealAiComment').textContent = r.comment ? `💬 ${r.comment}` : '';
-        document.getElementById('mealFoodName').value = r.foodName || '';
-        document.getElementById('mealKcal').value = r.kcal || '';
-        document.getElementById('mealProtein').value = r.protein || '';
-        document.getElementById('mealFat').value = r.fat || '';
-        document.getElementById('mealCarb').value = r.carb || '';
-        document.getElementById('mealMemo').value = '';
-
-        // 食事タイプを自動選択
-        const sel = document.getElementById('mealTypeSelect');
-        for (let i = 0; i < sel.options.length; i++) {
-          if (sel.options[i].value === mealType) { sel.selectedIndex = i; break; }
-        }
-
-        document.getElementById('mealStep1').style.display = 'none';
-        document.getElementById('mealStep2').style.display = 'block';
-      } else {
-        showToast('分析失敗: ' + (result.message || ''), true);
-      }
-    } catch(err) {
-      document.getElementById('mealAnalyzing').style.display = 'none';
-      showToast('通信エラー', true);
-    }
+    // base64を保持
+    window._mealImageBase64 = await compressImage(file, 800, 0.7);
   };
   reader.readAsDataURL(file);
+}
+
+// 分析ボタン押下
+async function analyzeMealWithNote() {
+  if (!window._mealImageBase64) { showToast('写真を選んでください', true); return; }
+  const note = document.getElementById('mealNote1').value.trim();
+  await doAnalyzeMeal(window._mealImageBase64, note);
+}
+
+// 再判定ボタン押下
+async function reanalyzeMeal() {
+  if (!window._mealImageBase64) { showToast('写真データがありません', true); return; }
+  const note = document.getElementById('mealNote2').value.trim();
+  const btn = document.getElementById('mealReanalyzeBtn');
+  btn.textContent = '⏳ 再判定中...';
+  btn.disabled = true;
+  await doAnalyzeMeal(window._mealImageBase64, note);
+  btn.textContent = '🔄 再判定する';
+  btn.disabled = false;
+}
+
+// 共通分析処理
+async function doAnalyzeMeal(base64, note) {
+  document.getElementById('mealStep1Note').style.display = 'none';
+  document.getElementById('mealAnalyzing').style.display = 'block';
+  document.getElementById('mealStep2').style.display = 'none';
+
+  try {
+    const trainerName = state.selectedTrainer ||
+      (state.menus[state.activeMenu]?.trainer) || '白石ナナ';
+    const result = await gasPost({
+      action: 'analyzeMeal',
+      imageBase64: base64,
+      trainerName,
+      note,
+    });
+
+    document.getElementById('mealAnalyzing').style.display = 'none';
+
+    if (result.status === 'ok') {
+      const r = result.result;
+      const timeStr = getCurrentTimeStr();
+      const mealType = getMealType(timeStr);
+
+      document.getElementById('mealImgPreview2').src = document.getElementById('mealImgPreview').src;
+      document.getElementById('mealResultGrid').innerHTML = `
+        <div class="meal-result-item"><div class="meal-result-val">${r.kcal}</div><div class="meal-result-label">KCAL</div></div>
+        <div class="meal-result-item"><div class="meal-result-val">${r.protein}g</div><div class="meal-result-label">PROTEIN</div></div>
+        <div class="meal-result-item"><div class="meal-result-val">${r.fat}g</div><div class="meal-result-label">FAT</div></div>
+        <div class="meal-result-item"><div class="meal-result-val">${r.carb}g</div><div class="meal-result-label">CARB</div></div>
+      `;
+      document.getElementById('mealAiComment').textContent = r.comment ? `💬 ${r.comment}` : '';
+      document.getElementById('mealFoodName').value = r.foodName || '';
+      document.getElementById('mealKcal').value = r.kcal || '';
+      document.getElementById('mealProtein').value = r.protein || '';
+      document.getElementById('mealFat').value = r.fat || '';
+      document.getElementById('mealCarb').value = r.carb || '';
+
+      const sel = document.getElementById('mealTypeSelect');
+      for (let i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === mealType) { sel.selectedIndex = i; break; }
+      }
+
+      document.getElementById('mealStep1').style.display = 'none';
+      document.getElementById('mealStep2').style.display = 'block';
+      document.getElementById('mealNote2').value = '';
+    } else {
+      showToast('分析失敗: ' + (result.message || ''), true);
+      document.getElementById('mealStep1Note').style.display = 'block';
+    }
+  } catch(err) {
+    document.getElementById('mealAnalyzing').style.display = 'none';
+    document.getElementById('mealStep1Note').style.display = 'block';
+    showToast('通信エラー', true);
+  }
 }
 
 function compressImage(file, maxWidth, quality) {
