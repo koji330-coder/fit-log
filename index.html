@@ -799,7 +799,9 @@ let state = {
   activeMenu: null,
   selectedTrainer: null,
   trainerList: [],
-  meals: {}, // { 'YYYY-MM-DD': [meal, ...] }
+  meals: {},
+  profile: { nickname: 'ガッキー', height: '', weight: '', gender: '', age: '', goal: '細マッチョ（体脂肪15%以下）' },
+  aiMenuType: 'sunny',
 };
 
 let calState = { year: new Date().getFullYear(), month: new Date().getMonth(), selectedDate: null };
@@ -844,6 +846,7 @@ async function init() {
       state.menus = result.menus || {};
       state.trainerList = result.trainerList || [];
       state.meals = result.meals || {};
+      if (result.profile) state.profile = result.profile;
     } else {
       showToast('データ読み込みエラー', true);
     }
@@ -1275,12 +1278,16 @@ async function finishWorkout() {
     if (undone.length > 0) menuSummary += `\n未実施: ${undone.join('、')}`;
   }
 
+  const nickname = state.profile?.nickname || 'ガッキー';
   const prompt = `あなたは＝LOVEの${trainerName}です。以下のキャラクター特性に従って話してください。
 
 【キャラクター特性】
 {{TRAINER_PROFILE}}
 
-ガッキーという筋トレ初心者の友達が今日のジムトレーニングを終えました。記録とメニュー達成状況を見て、${trainerName}らしいキャラクターで以下の2つをセットで返してください：
+【ユーザー情報】
+{{USER_PROFILE}}
+
+${nickname}という筋トレ初心者が今日のジムトレーニングを終えました。記録とメニュー達成状況を見て、${trainerName}らしいキャラクターで以下の2つをセットで返してください：
 
 ①今日の頑張りへの褒め（具体的な数値に触れながら。PR🔥があれば大げさに褒める）
 ②次回へのアドバイス（メモの内容や未達成種目を踏まえて、前向きに一言）
@@ -1291,7 +1298,7 @@ ${recordSummary}
 【メニュー状況】
 ${menuSummary}
 
-200〜250文字程度で、キャラクター特性に忠実に返してください。最後はそのキャラらしい締め方で応援してください。`;
+200〜250文字程度で、キャラクター特性に忠実に返してください。呼びかけは「${nickname}」を使ってください。最後はそのキャラらしい締め方で応援してください。`;
 
   try {
     const result = await gasPost({ action: 'getAiComment', prompt, trainerName });
@@ -1642,6 +1649,28 @@ function renderMenu() {
     <div class="import-btn-wrap">
       <button class="import-btn" onclick="importMenu()">📥 DriveからメニューCSVを取込</button>
     </div>
+
+    <div class="settings-card" style="margin-bottom:16px">
+      <div class="settings-card-title">🤖 AIにメニューを作ってもらう</div>
+      <div class="settings-card-desc">直近3回の記録を自動で参照して最適なメニューを生成します。</div>
+      <div class="menu-type-btns" style="margin-bottom:10px">
+        <button class="menu-type-btn ${state.aiMenuType === 'sunny' ? 'active' : ''}" onclick="setAiMenuType('sunny')">☀️ 晴れの日</button>
+        <button class="menu-type-btn ${state.aiMenuType === 'rainy' ? 'active' : ''}" onclick="setAiMenuType('rainy')">🌧️ 雨の日</button>
+      </div>
+      <div class="input-group" style="margin-bottom:10px">
+        <div class="input-label">トレーナー</div>
+        <select class="meal-select" id="aiMenuTrainer">
+          ${(state.trainerList.length > 0 ? state.trainerList : [{name:'佐々木舞香'}])
+            .map(t => `<option value="${t.name}" ${(state.selectedTrainer||'佐々木舞香')===t.name?'selected':''}>${t.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="input-group" style="margin-bottom:12px">
+        <div class="input-label">一言指示（任意）</div>
+        <textarea class="memo-field" id="aiMenuInstruction" placeholder="前回肩がきつかったので軽めで&#13;&#10;腹筋を多めに入れて など"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="generateAiMenu()" id="aiMenuBtn">🤖 AIメニューを生成</button>
+    </div>
+
     <div class="menu-type-btns">
       <button class="menu-type-btn ${state.activeMenu === 'menu_sunny' ? 'active' : ''}" onclick="switchMenu('menu_sunny')">☀️ 晴れの日</button>
       <button class="menu-type-btn ${state.activeMenu === 'menu_rainy' ? 'active' : ''}" onclick="switchMenu('menu_rainy')">🌧️ 雨の日</button>
@@ -1695,6 +1724,59 @@ function renderMenu() {
   }
 
   container.innerHTML = html;
+}
+
+function setAiMenuType(type) {
+  state.aiMenuType = type;
+  renderMenu();
+}
+
+async function generateAiMenu() {
+  const btn = document.getElementById('aiMenuBtn');
+  btn.textContent = '⏳ 生成中...';
+  btn.disabled = true;
+
+  const menuType = state.aiMenuType;
+  const trainerName = document.getElementById('aiMenuTrainer').value;
+  const instruction = document.getElementById('aiMenuInstruction').value.trim();
+
+  // 直近3回分の記録を抽出
+  const dates = Object.keys(state.history).sort((a,b) => b.localeCompare(a)).slice(0, 3);
+  const recentLogs = dates.map(date => ({
+    date,
+    entries: state.history[date] || []
+  }));
+
+  // 挑戦済み種目名の一覧を抽出
+  const triedNames = [...new Set(
+    Object.values(state.history).flat().map(e => e.name)
+  )];
+
+  try {
+    const result = await gasPost({
+      action: 'generateMenu',
+      menuType,
+      trainerName,
+      instruction,
+      recentLogs,
+      profile: state.profile,
+      triedNames,
+    });
+
+    if (result.status === 'ok') {
+      state.menus = result.menus || {};
+      state.activeMenu = menuType === 'sunny' ? 'menu_sunny' : 'menu_rainy';
+      showToast(`✅ ${menuType === 'sunny' ? '☀️晴れ' : '🌧️雨'}のメニューを生成しました！`);
+      renderMenu();
+    } else {
+      showToast('生成失敗: ' + (result.message || ''), true);
+    }
+  } catch(e) {
+    showToast('通信エラー', true);
+  }
+
+  btn.textContent = '🤖 AIメニューを生成';
+  btn.disabled = false;
 }
 
 function switchMenu(type) {
@@ -1883,13 +1965,61 @@ function downloadCSV(range) {
 function renderSettings() {
   const container = document.getElementById('settingsContent');
   const currentTrainer = state.selectedTrainer;
+  const p = state.profile || {};
 
-  // トレーナー一覧はスプレッドシートから取得したものを使う
   const trainers = state.trainerList.length > 0
     ? state.trainerList
-    : [{ name: '佐々木舞香', tone: 'クール・現実的' }]; // フォールバック
+    : [{ name: '佐々木舞香', tone: 'クール・現実的' }];
 
   let html = `
+    <div class="settings-section">
+      <div class="settings-section-title">👤 プロフィール</div>
+      <div class="settings-card">
+        <div class="input-row" style="margin-bottom:10px">
+          <div class="input-group">
+            <div class="input-label">あだ名</div>
+            <input class="input-field" type="text" id="profNickname" value="${p.nickname||''}" placeholder="ガッキー" style="font-size:14px;text-align:left">
+          </div>
+          <div class="input-group">
+            <div class="input-label">性別</div>
+            <select class="meal-select" id="profGender" style="margin-bottom:0">
+              <option value="" ${!p.gender?'selected':''}>未設定</option>
+              <option value="男性" ${p.gender==='男性'?'selected':''}>男性</option>
+              <option value="女性" ${p.gender==='女性'?'selected':''}>女性</option>
+              <option value="その他" ${p.gender==='その他'?'selected':''}>その他</option>
+            </select>
+          </div>
+        </div>
+        <div class="input-row" style="margin-bottom:10px">
+          <div class="input-group">
+            <div class="input-label">年齢</div>
+            <input class="input-field" type="number" id="profAge" value="${p.age||''}" placeholder="30" inputmode="numeric">
+          </div>
+          <div class="input-group">
+            <div class="input-label">身長(cm)</div>
+            <input class="input-field" type="number" id="profHeight" value="${p.height||''}" placeholder="175" inputmode="decimal">
+          </div>
+        </div>
+        <div class="input-row" style="margin-bottom:10px">
+          <div class="input-group">
+            <div class="input-label">体重(kg)</div>
+            <input class="input-field" type="number" id="profWeight" value="${p.weight||''}" placeholder="67" inputmode="decimal">
+          </div>
+          <div class="input-group">
+            <div class="input-label">体脂肪率(%)</div>
+            <input class="input-field" type="number" id="profBodyfat" value="${p.bodyfat||''}" placeholder="19" inputmode="decimal">
+          </div>
+        </div>
+        <div class="input-group" style="margin-bottom:12px">
+          <div class="input-label">目標</div>
+          <input class="input-field" type="text" id="profGoal" value="${p.goal||''}" placeholder="細マッチョ（体脂肪15%以下）" style="font-size:13px;text-align:left">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveProfileSettings()">💾 プロフィールを保存</button>
+      </div>
+    </div>
+  `;
+
+  html += `
     <div class="settings-section">
       <div class="settings-section-title">🌸 褒めトレーナーを選ぶ</div>
       <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;line-height:1.6">
@@ -1943,10 +2073,30 @@ function renderSettings() {
 
 function selectTrainer(name) {
   state.selectedTrainer = name;
-  // LocalStorageに保存（設定は端末に残す）
   try { localStorage.setItem('fitlog_trainer', name || ''); } catch(e) {}
   renderSettings();
   showToast(name ? `✅ ${name}を選択しました` : '✅ メニューのトレーナーに従います');
+}
+
+async function saveProfileSettings() {
+  const profile = {
+    nickname: document.getElementById('profNickname').value.trim() || 'ガッキー',
+    gender: document.getElementById('profGender').value,
+    age: document.getElementById('profAge').value,
+    height: document.getElementById('profHeight').value,
+    weight: document.getElementById('profWeight').value,
+    bodyfat: document.getElementById('profBodyfat').value,
+    goal: document.getElementById('profGoal').value.trim(),
+  };
+
+  state.profile = profile;
+
+  try {
+    await gasPost({ action: 'saveProfile', profile });
+    showToast('✅ プロフィールを保存しました');
+  } catch(e) {
+    showToast('保存失敗', true);
+  }
 }
 
 function downloadForNextMenu(type) {
