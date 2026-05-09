@@ -1469,17 +1469,17 @@ function renderToday() {
     todayMeals.forEach(m => {
       html += `
         <div class="meal-card">
-          <div>
+          <div style="flex-shrink:0">
             <div class="meal-type-badge">${m.mealType}</div>
             <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${m.time}</div>
           </div>
-          <div style="flex:1">
+          <div style="flex:1;min-width:0">
             <div class="meal-food-name">${m.foodName}</div>
             <div class="meal-pfc">
-              <div class="tot-label">🔥 <span>${m.kcal}kcal</span></div>
-              <div class="tot-label">P:<span>${m.protein}g</span></div>
-              <div class="tot-label">F:<span>${m.fat}g</span></div>
-              <div class="tot-label">C:<span>${m.carb}g</span></div>
+              <span>🔥${m.kcal}kcal</span>
+              <span>P:${m.protein}g</span>
+              <span>F:${m.fat}g</span>
+              <span>C:${m.carb}g</span>
             </div>
             ${m.memo ? `<div style="font-size:11px;color:var(--text-dim);margin-top:4px">📝 ${m.memo}</div>` : ''}
           </div>
@@ -2780,8 +2780,10 @@ function renderBody() {
           <button onclick="deleteBodyPhotoRecord('${photo.fileId}','${photo.date}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:18px">🗑</button>
         </div>
         <span class="body-photo-type">${photo.type}</span>
-        <img class="body-photo-img" src="${photo.imageUrl}" loading="lazy"
-          onerror="this.style.display='none'"
+        <img class="body-photo-img" id="body-img-${photo.fileId}"
+          src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+          data-fileid="${photo.fileId}"
+          style="background:var(--surface2);min-height:100px"
           onclick="openBodyCompare(${idx})">
         ${photo.memo ? `<div class="body-photo-memo">📝 ${photo.memo}</div>` : ''}
         ${photo.aiComment ? `<div class="body-photo-ai">🌸 ${photo.aiComment}</div>` : ''}
@@ -2794,12 +2796,20 @@ function renderBody() {
   });
 
   container.innerHTML = html;
+
+  // 画像を非同期でロード
+  document.querySelectorAll('img[data-fileid]').forEach(img => {
+    loadBodyImage(img.dataset.fileid);
+  });
 }
 
 let bodyPhotoBase64 = null;
 
 function openBodyPhotoModal() {
   bodyPhotoBase64 = null;
+  isSavingBodyPhoto = false; // ← リセット
+  const btn = document.getElementById('bodyPhotoSaveBtn');
+  if (btn) { btn.disabled = false; btn.textContent = '保存'; }
   document.getElementById('bodyPhotoPreview').style.display = 'none';
   document.getElementById('bodyPhotoInput').value = '';
   document.getElementById('bodyWeight').value = state.profile?.weight || '';
@@ -2894,11 +2904,11 @@ function openBodyCompare(idx) {
         <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:white;letter-spacing:3px;margin-bottom:16px">BEFORE / AFTER</div>
         <div class="body-compare-wrap">
           <div>
-            <img class="body-compare-img" src="${prev.imageUrl}" loading="lazy">
+            <img class="body-compare-img" id="compare-prev-${idx}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" style="background:var(--surface2);min-height:150px">
             <div class="body-compare-label">${formatDate(prev.date)}${prev.weight?` ${prev.weight}kg`:''}${prev.bodyfat?` ${prev.bodyfat}%`:''}</div>
           </div>
           <div>
-            <img class="body-compare-img" src="${current.imageUrl}" loading="lazy">
+            <img class="body-compare-img" id="compare-cur-${idx}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" style="background:var(--surface2);min-height:150px">
             <div class="body-compare-label">${formatDate(current.date)}${current.weight?` ${current.weight}kg`:''}${current.bodyfat?` ${current.bodyfat}%`:''}</div>
           </div>
         </div>
@@ -2907,6 +2917,9 @@ function openBodyCompare(idx) {
     </div>
   `;
   document.body.insertAdjacentHTML('beforeend', compareHtml);
+  // 比較画像をロード
+  loadBodyImage(prev.fileId, `compare-prev-${idx}`);
+  loadBodyImage(current.fileId, `compare-cur-${idx}`);
 }
 
 async function getBodyAiComment(idx) {
@@ -2953,6 +2966,32 @@ async function doBodyAiComment(photo, prevPhoto, idx) {
     }
   } catch(e) {
     showToast('分析失敗', true);
+  }
+}
+
+const bodyImageCache = {};
+
+async function loadBodyImage(fileId, elemId) {
+  const id = elemId || `body-img-${fileId}`;
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  // キャッシュがあれば即表示
+  if (bodyImageCache[fileId]) {
+    el.src = bodyImageCache[fileId];
+    return;
+  }
+
+  try {
+    const result = await gasGet({ action: 'getImage', fileId });
+    if (result.status === 'ok') {
+      const dataUrl = `data:${result.mimeType};base64,${result.base64}`;
+      bodyImageCache[fileId] = dataUrl;
+      const target = document.getElementById(id);
+      if (target) target.src = dataUrl;
+    }
+  } catch(e) {
+    console.log('画像読み込みエラー:', e);
   }
 }
 
