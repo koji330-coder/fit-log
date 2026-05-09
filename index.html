@@ -2907,7 +2907,12 @@ function renderBody() {
         ${photo.aiComment ? `<div class="body-photo-ai">🌸 ${photo.aiComment}</div>` : ''}
         <div class="body-photo-actions">
           ${prevPhoto ? `<button class="body-action-btn" onclick="openBodyCompare(${idx})">⬅️ 前回と比較</button>` : ''}
-          <button class="body-action-btn" onclick="getBodyAiComment(${idx})">🌸 AIコメント</button>
+          <div style="display:flex;gap:6px;flex:1;align-items:center">
+            <select class="meal-select" id="bodyTrainer-${idx}" style="margin-bottom:0;font-size:11px;padding:6px 8px;flex:1">
+              ${(state.trainerList.length > 0 ? state.trainerList : [{name:'佐々木舞香'}]).map(t => `<option value="${t.name}">${t.name}</option>`).join('')}
+            </select>
+            <button class="body-action-btn" style="flex-shrink:0;white-space:nowrap" onclick="getBodyAiComment(${idx})">🌸 AI</button>
+          </div>
         </div>
       </div>
     `;
@@ -3056,7 +3061,8 @@ async function getBodyAiCommentCompare(idx) {
 
 async function doBodyAiComment(photo, prevPhoto, idx) {
   showToast('🌸 AIが分析中...');
-  const trainerName = state.trainerReview || state.trainerComplete || '佐々木舞香';
+  const sel = document.getElementById(`bodyTrainer-${idx}`);
+  const trainerName = sel?.value || state.trainerReview || '佐々木舞香';
 
   // 筋トレ実績サマリー（直近30日）
   const today = getTodayStr();
