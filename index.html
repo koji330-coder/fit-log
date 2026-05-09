@@ -493,6 +493,31 @@
   }
   .meal-select:focus { outline: none; border-color: var(--accent); }
 
+  /* PIN LOCK */
+  .pin-modal-box {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 28px 24px;
+    width: 100%; max-width: 320px; text-align: center;
+  }
+  .pin-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 3px; margin-bottom: 6px; }
+  .pin-desc { font-size: 12px; color: var(--text-dim); margin-bottom: 20px; }
+  .pin-dots { display: flex; justify-content: center; gap: 12px; margin-bottom: 20px; }
+  .pin-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid var(--border); background: transparent; transition: all 0.15s;
+  }
+  .pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+  .pin-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+  .pin-key {
+    padding: 14px; border-radius: 12px; border: 1.5px solid var(--border);
+    background: var(--surface2); color: var(--text);
+    font-family: 'Bebas Neue', sans-serif; font-size: 22px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .pin-key:hover { border-color: var(--accent); background: rgba(255,61,107,0.1); }
+  .pin-key.del { font-size: 16px; }
+  .pin-error { color: var(--accent); font-size: 12px; font-weight: 700; margin-top: -8px; margin-bottom: 8px; }
+
   /* BODY SCREEN */
   .body-add-btn {
     width: 100%; padding: 16px; border-radius: 14px;
@@ -730,6 +755,28 @@
       <button class="btn btn-secondary btn-sm" onclick="closeMealEditModal()">キャンセル</button>
       <button class="btn btn-primary btn-sm" onclick="saveMealEdit()">保存</button>
     </div>
+  </div>
+</div>
+
+<!-- PIN LOCK MODAL -->
+<div class="modal-overlay hidden" id="pinLockModal">
+  <div class="pin-modal-box">
+    <div class="pin-title">🔒 BODY</div>
+    <div class="pin-desc">PINを入力してください</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-error hidden" id="pinError">PINが違います</div>
+    <div class="pin-keypad">
+      ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="pin-key" onclick="pinInput(${n})">${n}</button>`).join('')}
+      <div></div>
+      <button class="pin-key" onclick="pinInput(0)">0</button>
+      <button class="pin-key del" onclick="pinDelete()">⌫</button>
+    </div>
+    <button class="btn btn-secondary btn-sm" onclick="closePinModal()">キャンセル</button>
   </div>
 </div>
 
@@ -1208,7 +1255,14 @@ function showScreen(name) {
   if (name === 'calendar') renderCalendar();
   if (name === 'complete') renderComplete();
   if (name === 'settings') renderSettings();
-  if (name === 'body') renderBody();
+  if (name === 'body') {
+    const pin = state.profile?.body_pin;
+    if (pin && !sessionBodyUnlocked) {
+      openPinModal();
+      return;
+    }
+    renderBody();
+  }
   updateFinishBtn();
 }
 
@@ -2741,6 +2795,62 @@ function downloadCSV(range) {
 }
 
 // =============================================
+// PIN LOCK
+// =============================================
+let sessionBodyUnlocked = false;
+let pinBuffer = '';
+
+function openPinModal() {
+  pinBuffer = '';
+  document.getElementById('pinLockModal').classList.remove('hidden');
+  document.getElementById('pinError').classList.add('hidden');
+  updatePinDots();
+}
+
+function closePinModal() {
+  document.getElementById('pinLockModal').classList.add('hidden');
+  pinBuffer = '';
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById(`pd${i}`);
+    dot.classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+
+function pinInput(num) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += String(num);
+  updatePinDots();
+  if (pinBuffer.length === 4) {
+    const correct = state.profile?.body_pin;
+    if (pinBuffer === correct) {
+      sessionBodyUnlocked = true;
+      closePinModal();
+      showScreen('body');
+    } else {
+      document.getElementById('pinError').classList.remove('hidden');
+      setTimeout(() => {
+        pinBuffer = '';
+        updatePinDots();
+        document.getElementById('pinError').classList.add('hidden');
+      }, 800);
+    }
+  }
+}
+
+function pinDelete() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+}
+
+function clearBodyPin() {
+  document.getElementById('profBodyPin').value = '';
+  showToast('PINをクリアしました。保存してください。');
+}
+
+// =============================================
 // BODY SCREEN
 // =============================================
 function renderBody() {
@@ -3084,6 +3194,16 @@ function renderSettings() {
             </select>
           </div>
         </div>
+        <div style="font-size:11px;font-weight:900;letter-spacing:2px;color:var(--text-dim);margin:12px 0 8px">🔒 BODYタブPINロック</div>
+        <div class="input-row" style="margin-bottom:12px">
+          <div class="input-group">
+            <div class="input-label">PIN（4桁・未設定で無効）</div>
+            <input class="input-field" type="password" id="profBodyPin" value="${p.body_pin||''}" placeholder="----" maxlength="4" inputmode="numeric">
+          </div>
+          <div class="input-group" style="justify-content:flex-end;align-items:flex-end">
+            <button class="btn btn-secondary btn-sm" onclick="clearBodyPin()">PINを消す</button>
+          </div>
+        </div>
         <button class="btn btn-primary btn-sm" onclick="saveProfileSettings()">💾 プロフィールを保存</button>
       </div>
     </div>
@@ -3165,6 +3285,7 @@ async function saveProfileSettings() {
     target_carb: document.getElementById('profTargetCarb').value,
     training_day_kcal_bonus: document.getElementById('profTrainingBonus').value,
     meal_template_suggest_enabled: document.getElementById('profTemplSuggest').value,
+    body_pin: document.getElementById('profBodyPin').value,
   };
 
   state.profile = profile;
