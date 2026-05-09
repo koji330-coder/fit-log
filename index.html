@@ -1060,7 +1060,7 @@ const MACHINES = {
     name: '筋トレマシン', icon: '🔧', type: 'strength',
     exercises: [
       { name: 'ラテラルレイズ', part: '肩' }, { name: 'ショルダープレス', part: '肩' },
-      { name: 'リアデルトフライ', part: '肩' }, { name: 'チェストプレス', part: '胸' },
+      { name: 'リアデルトフライ', part: '肩' }, { name: 'ペックフライ', part: '胸' }, { name: 'チェストプレス', part: '胸' },
       { name: 'ラットプルダウン', part: '背中' }, { name: 'シーテッドロー', part: '背中' },
       { name: 'ディップ・チンアシスト', part: '背中/胸' }, { name: '8スタックマルチステーション', part: '全身' },
       { name: 'アームカール', part: '腕' }, { name: 'アブドミナル', part: '腹' },
@@ -1433,6 +1433,7 @@ async function saveExercise() {
 
     updateFinishBtn();
     state.currentSets = [];
+    if (btn) { btn.disabled = false; btn.textContent = 'この種目を保存'; }
     document.getElementById('step-set').style.display = 'none';
     document.getElementById('step-exercise').style.display = 'none';
     document.getElementById('step-area').style.display = 'block';
