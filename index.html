@@ -771,7 +771,15 @@
     </div>
     <div class="pin-error hidden" id="pinError">PINが違います</div>
     <div class="pin-keypad">
-      ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="pin-key" onclick="pinInput(${n})">${n}</button>`).join('')}
+      <button class="pin-key" onclick="pinInput(1)">1</button>
+      <button class="pin-key" onclick="pinInput(2)">2</button>
+      <button class="pin-key" onclick="pinInput(3)">3</button>
+      <button class="pin-key" onclick="pinInput(4)">4</button>
+      <button class="pin-key" onclick="pinInput(5)">5</button>
+      <button class="pin-key" onclick="pinInput(6)">6</button>
+      <button class="pin-key" onclick="pinInput(7)">7</button>
+      <button class="pin-key" onclick="pinInput(8)">8</button>
+      <button class="pin-key" onclick="pinInput(9)">9</button>
       <div></div>
       <button class="pin-key" onclick="pinInput(0)">0</button>
       <button class="pin-key del" onclick="pinDelete()">⌫</button>
