@@ -1585,6 +1585,20 @@ function renderToday() {
 // =============================================
 // DELETE ENTRY
 // =============================================
+async function deleteEntryFromCalendar(date, idx) {
+  if (!confirm('この種目の記録を削除しますか？')) return;
+  const remaining = (state.history[date] || []).filter((_, i) => i !== idx);
+  if (remaining.length === 0) delete state.history[date];
+  else state.history[date] = remaining;
+  try {
+    await gasPost({ action: 'saveDay', date, entries: remaining.map(e => ({ ...e, date })) });
+    showToast('🗑 削除しました');
+  } catch(e) {
+    showToast('削除失敗', true);
+  }
+  renderCalendar();
+}
+
 let isDeletingEntry = false;
 
 async function deleteEntry(idx) {
@@ -1722,6 +1736,8 @@ ${menuSummary}
       </div>`;
   } finally {
     isFinishing = false;
+    const finishBtnReset = document.querySelector('.finish-btn');
+    if (finishBtnReset) { finishBtnReset.disabled = false; finishBtnReset.textContent = '🏁 トレーニング完了！'; }
   }
 }
 
@@ -1821,8 +1837,15 @@ function renderCalendar() {
     // 筋トレ記録
     if (log.length > 0) {
       html += `<div style="font-size:11px;font-weight:900;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">💪 筋トレ</div>`;
-      for (const entry of log) {
-        html += `<div class="cal-detail-ex"><div class="cal-detail-ex-name">${entry.name} <span style="color:var(--text-dim);font-size:11px">${entry.area}</span></div><div class="cal-detail-chips">`;
+      for (const [entryIdx, entry] of log.entries()) {
+        html += `
+          <div class="cal-detail-ex">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div class="cal-detail-ex-name">${entry.name} <span style="color:var(--text-dim);font-size:11px">${entry.area}</span></div>
+              <button onclick="deleteEntryFromCalendar('${calState.selectedDate}',${entryIdx})" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-size:11px;padding:4px 8px;cursor:pointer;flex-shrink:0;margin-left:8px">🗑</button>
+            </div>
+            <div class="cal-detail-chips">
+        `;
         if (entry.type === 'cardio') {
           const parts = [];
           if (entry.time) parts.push(`⏱${entry.time}分`);
