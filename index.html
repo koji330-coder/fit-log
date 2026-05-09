@@ -1690,6 +1690,22 @@ async function finishWorkout() {
     if (undone.length > 0) menuSummary += `\n未実施: ${undone.join('、')}`;
   }
 
+  // 今日の食事サマリー
+  const todayMeals = state.meals[state.recordingDate] || [];
+  let mealSummary = '今日の食事記録なし';
+  if (todayMeals.length > 0) {
+    const totalKcal = todayMeals.reduce((a, m) => a + (m.kcal||0), 0);
+    const totalP = todayMeals.reduce((a, m) => a + (m.protein||0), 0);
+    const totalF = todayMeals.reduce((a, m) => a + (m.fat||0), 0);
+    const totalC = todayMeals.reduce((a, m) => a + (m.carb||0), 0);
+    const tP = parseInt(state.profile?.target_protein||0);
+    mealSummary = `${todayMeals.length}食記録 / 合計: ${totalKcal}kcal P:${totalP}g F:${totalF}g C:${totalC}g`;
+    if (tP) mealSummary += ` / タンパク質目標: ${tP}g（差分: ${totalP - tP > 0 ? '+' : ''}${totalP - tP}g）`;
+    todayMeals.forEach(m => {
+      mealSummary += `\n・${m.mealType} ${m.foodName}`;
+    });
+  }
+
   const nickname = state.profile?.nickname || 'ガッキー';
   const prompt = `あなたは＝LOVEの${trainerName}です。以下のキャラクター特性に従って話してください。
 
@@ -1699,10 +1715,11 @@ async function finishWorkout() {
 【ユーザー情報】
 {{USER_PROFILE}}
 
-${nickname}という筋トレ初心者が今日のジムトレーニングを終えました。記録とメニュー達成状況を見て、${trainerName}らしいキャラクターで以下の2つをセットで返してください：
+${nickname}が今日のジムトレーニングを終えました。記録とメニュー達成状況・食事を見て、${trainerName}らしいキャラクターで以下の3つをセットで返してください：
 
 ①今日の頑張りへの褒め（具体的な数値に触れながら。PR🔥があれば大げさに褒める）
-②次回へのアドバイス（メモの内容や未達成種目を踏まえて、前向きに一言）
+②食事へのひとこと（タンパク質が足りてるか、目標との差分を踏まえて自然に触れる。食事記録がない場合は「食事も記録してね」と軽く促す）
+③次回へのアドバイス（メモの内容や未達成種目を踏まえて、前向きに一言）
 
 【今日の記録】
 ${recordSummary}
@@ -1710,7 +1727,10 @@ ${recordSummary}
 【メニュー状況】
 ${menuSummary}
 
-200〜250文字程度で、キャラクター特性に忠実に返してください。呼びかけは「${nickname}」を使ってください。最後はそのキャラらしい締め方で応援してください。`;
+【今日の食事】
+${mealSummary}
+
+250〜300文字程度で、キャラクター特性に忠実に返してください。呼びかけは「${nickname}」を使ってください。最後はそのキャラらしい締め方で応援してください。`;
 
   try {
     const result = await gasPost({ action: 'getAiComment', prompt, trainerName });
