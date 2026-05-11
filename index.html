@@ -1568,6 +1568,7 @@ function renderToday() {
 
   // 体重・体脂肪入力
   const todayMetric = state.bodyMetrics[state.recordingDate] || {};
+  const todayMeals = state.meals[state.recordingDate] || [];
   html += `
     <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px">
       <div style="font-size:11px;font-weight:900;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px">⚖️ 今日の体重</div>
@@ -1774,7 +1775,6 @@ async function finishWorkout() {
   }
 
   // 今日の食事サマリー
-  const todayMeals = state.meals[state.recordingDate] || [];
   let mealSummary = '今日の食事記録なし';
   if (todayMeals.length > 0) {
     const totalKcal = todayMeals.reduce((a, m) => a + (m.kcal||0), 0);
