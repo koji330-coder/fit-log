@@ -1782,16 +1782,17 @@ async function finishWorkout() {
   }
 
   // 今日の食事サマリー
+  const todayMealsForPrompt = state.meals[state.recordingDate] || [];
   let mealSummary = '今日の食事記録なし';
-  if (todayMeals.length > 0) {
-    const totalKcal = todayMeals.reduce((a, m) => a + (m.kcal||0), 0);
-    const totalP = todayMeals.reduce((a, m) => a + (m.protein||0), 0);
-    const totalF = todayMeals.reduce((a, m) => a + (m.fat||0), 0);
-    const totalC = todayMeals.reduce((a, m) => a + (m.carb||0), 0);
+  if (todayMealsForPrompt.length > 0) {
+    const totalKcal = todayMealsForPrompt.reduce((a, m) => a + (m.kcal||0), 0);
+    const totalP = todayMealsForPrompt.reduce((a, m) => a + (m.protein||0), 0);
+    const totalF = todayMealsForPrompt.reduce((a, m) => a + (m.fat||0), 0);
+    const totalC = todayMealsForPrompt.reduce((a, m) => a + (m.carb||0), 0);
     const tP = parseInt(state.profile?.target_protein||0);
-    mealSummary = `${todayMeals.length}食記録 / 合計: ${totalKcal}kcal P:${totalP}g F:${totalF}g C:${totalC}g`;
+    mealSummary = `${todayMealsForPrompt.length}食記録 / 合計: ${totalKcal}kcal P:${totalP}g F:${totalF}g C:${totalC}g`;
     if (tP) mealSummary += ` / タンパク質目標: ${tP}g（差分: ${totalP - tP > 0 ? '+' : ''}${totalP - tP}g）`;
-    todayMeals.forEach(m => {
+    todayMealsForPrompt.forEach(m => {
       mealSummary += `\n・${m.mealType} ${m.foodName}`;
     });
   }
