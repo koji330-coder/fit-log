@@ -493,6 +493,48 @@
   }
   .meal-select:focus { outline: none; border-color: var(--accent); }
 
+  /* BODY METRICS GRAPH */
+  .metrics-graph-wrap {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 16px;
+  }
+  .metrics-graph-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 13px;
+    letter-spacing: 3px; color: var(--text-dim); margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .metrics-period-btns { display: flex; gap: 6px; }
+  .metrics-period-btn {
+    padding: 4px 10px; border-radius: 8px; border: 1.5px solid var(--border);
+    background: transparent; color: var(--text-dim); font-size: 11px;
+    font-weight: 700; cursor: pointer; font-family: 'Noto Sans JP', sans-serif;
+    transition: all 0.15s;
+  }
+  .metrics-period-btn.active { border-color: var(--accent); color: var(--accent); }
+  .metrics-svg-wrap { width: 100%; overflow-x: auto; }
+  .metrics-legend { display: flex; gap: 16px; margin-top: 8px; font-size: 11px; }
+  .metrics-legend-item { display: flex; align-items: center; gap: 4px; color: var(--text-dim); }
+  .metrics-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* DAY LOG */
+  .day-log-section { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .day-log-title { font-size:11px; font-weight:900; letter-spacing:2px; color:var(--text-dim); margin-bottom:10px; }
+  .day-log-toggle { display:flex; gap:8px; margin-bottom:10px; }
+  .day-log-toggle-btn {
+    flex:1; padding:8px; border-radius:10px; border:1.5px solid var(--border);
+    background:var(--surface2); color:var(--text-dim); font-size:13px; font-weight:700;
+    cursor:pointer; transition:all 0.2s; font-family:'Noto Sans JP',sans-serif;
+  }
+  .day-log-toggle-btn.active { border-color:var(--accent); background:rgba(255,61,107,0.12); color:var(--text); }
+  .mood-grid { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+  .mood-btn {
+    padding:6px 12px; border-radius:20px; border:1.5px solid var(--border);
+    background:var(--surface2); font-size:18px; cursor:pointer; transition:all 0.2s;
+  }
+  .mood-btn.active { border-color:var(--accent); background:rgba(255,61,107,0.12); transform:scale(1.1); }
+  .day-log-save-btn { margin-top:10px; }
+  .cal-cell-mood { font-size:10px; line-height:1; text-align:center; margin-top:1px; }
+
   /* PIN LOCK */
   .pin-modal-box {
     background: var(--surface); border: 1.5px solid var(--border);
@@ -1123,7 +1165,10 @@ let state = {
     training_day_kcal_bonus: '', meal_template_suggest_enabled: 'false',
   },
   aiMenuType: 'sunny',
-  bodyPhotos: [], // [{date, time, type, fileId, imageUrl, weight, bodyfat, memo, aiComment}]
+  bodyPhotos: [],
+  dayLogs: {},
+  bodyMetrics: {}, // { 'YYYY-MM-DD': { weight, bodyfat } }
+};
 };
 
 let calState = { year: new Date().getFullYear(), month: new Date().getMonth(), selectedDate: null };
@@ -1170,6 +1215,8 @@ async function init() {
       state.meals = result.meals || {};
       if (result.profile) state.profile = result.profile;
       state.bodyPhotos = result.bodyPhotos || [];
+      state.dayLogs = result.dayLogs || {};
+      state.bodyMetrics = result.bodyMetrics || {};
     } else {
       showToast('データ読み込みエラー', true);
     }
@@ -1341,6 +1388,24 @@ function selectExercise(ex, type) {
   document.getElementById('strengthInputs').style.display = isCardio ? 'none' : 'block';
   document.getElementById('addSetBtn').style.display = isCardio ? 'none' : 'inline-block';
 
+  if (!isCardio) {
+    // 重量・回数を毎回リセットしてから初期値をセット
+    const weightInput = document.getElementById('inputWeight');
+    const repsInput = document.getElementById('inputReps');
+    weightInput.value = '';
+    repsInput.value = '';
+
+    const initial = getInitialWeight(ex.name);
+    if (initial) {
+      weightInput.value = initial.weight;
+      repsInput.placeholder = initial.reps ? `前回 ${initial.reps}回` : '回数';
+      weightInput.placeholder = initial.source === 'menu' ? `目標 ${initial.weight}kg` : `前回 ${initial.weight}kg`;
+    } else {
+      weightInput.placeholder = '重量';
+      repsInput.placeholder = '回数';
+    }
+  }
+
   const hint = document.getElementById('prevRecordHint');
   if (!isCardio) {
     const prev = getPrevRecord(ex.name);
@@ -1502,8 +1567,27 @@ function renderToday() {
     html += '</div>';
   }
 
-  // 食事セクション
-  const todayMeals = state.meals[state.recordingDate] || [];
+  // 体重・体脂肪入力
+  const todayMetric = state.bodyMetrics[state.recordingDate] || {};
+  html += `
+    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px">
+      <div style="font-size:11px;font-weight:900;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px">⚖️ 今日の体重</div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="input-group" style="flex:1">
+          <div class="input-label">体重 kg</div>
+          <input class="input-field" type="number" id="todayWeight" inputmode="decimal" step="0.1"
+            value="${todayMetric.weight || state.profile?.weight || ''}" placeholder="67.3">
+        </div>
+        <div class="input-group" style="flex:1">
+          <div class="input-label">体脂肪率 %</div>
+          <input class="input-field" type="number" id="todayBodyfat" inputmode="decimal" step="0.1"
+            value="${todayMetric.bodyfat || state.profile?.bodyfat || ''}" placeholder="18.5">
+        </div>
+        <button class="btn btn-secondary" style="flex-shrink:0;width:auto;padding:10px 16px;margin-top:18px;font-size:13px"
+          onclick="saveBodyMetricToday()">記録</button>
+      </div>
+    </div>
+  `;
   html += `
     <div class="meal-section">
       <div class="meal-section-title">
@@ -1817,6 +1901,7 @@ function renderCalendar() {
       <div class="cal-month">${year} / ${String(month+1).padStart(2,'0')}</div>
       <button class="cal-nav-btn" onclick="calNav(1)">›</button>
     </div>
+    ${renderBodyMetricsGraph()}
     <button class="btn btn-secondary" style="margin-bottom:14px;font-size:13px" onclick="openPeriodReviewModal()">📊 期間を振り返る</button>
     <div class="cal-stats">
       <div class="cal-stat"><div class="cal-stat-val">${monthDates.length}</div><div class="cal-stat-label">今月の来館</div></div>
@@ -1840,10 +1925,13 @@ function renderCalendar() {
     const hasLog = !!(state.history[dateStr]?.length);
     const hasMeal = !!(state.meals[dateStr]?.length);
     const hasData = hasLog || hasMeal;
+    const dayLog = state.dayLogs[dateStr];
+    const moodEmoji = dayLog?.moods ? dayLog.moods.split(',')[0] : '';
     const isToday = dateStr === todayStr;
     const isSelected = dateStr === calState.selectedDate;
-    const cls = ['cal-cell', hasData?'has-log':'', isToday?'today':'', isSelected?'selected':''].filter(Boolean).join(' ');
-    html += `<div class="${cls}" onclick="calSelectDate('${dateStr}')">${d}${hasData?'<div class="cal-dot"></div>':''}</div>`;
+    const isHoliday = dayLog?.isHoliday;
+    const cls = ['cal-cell', hasData?'has-log':'', isToday?'today':'', isSelected?'selected':'', isHoliday?'cal-holiday':''].filter(Boolean).join(' ');
+    html += `<div class="${cls}" onclick="calSelectDate('${dateStr}')">${d}${hasData?'<div class="cal-dot"></div>':''}${moodEmoji?`<div class="cal-cell-mood">${moodEmoji}</div>`:''}</div>`;
   }
 
   html += `</div>`;
@@ -1921,6 +2009,50 @@ function renderCalendar() {
       `;
     }
 
+    // 日記セクション
+    const dl = state.dayLogs[calState.selectedDate] || {};
+    const savedMoods = dl.moods ? dl.moods.split(',').filter(Boolean) : [];
+    const MOODS = ['😊','😤','😴','🤒','✈️','🎉','💪','😅','🍻'];
+
+    html += `
+      <div class="day-log-section">
+        <div class="day-log-title">📔 この日のメモ（任意）</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <div class="input-group" style="flex:1">
+            <div class="input-label">体重 kg</div>
+            <input class="input-field" type="number" id="calWeight" inputmode="decimal" step="0.1"
+              value="${(state.bodyMetrics[calState.selectedDate]?.weight) || ''}" placeholder="67.3">
+          </div>
+          <div class="input-group" style="flex:1">
+            <div class="input-label">体脂肪率 %</div>
+            <input class="input-field" type="number" id="calBodyfat" inputmode="decimal" step="0.1"
+              value="${(state.bodyMetrics[calState.selectedDate]?.bodyfat) || ''}" placeholder="18.5">
+          </div>
+        </div>
+        <div class="day-log-toggle">
+          <button class="day-log-toggle-btn ${dl.isHoliday ? '' : 'active'}" onclick="setDayLogHoliday(false)">💼 仕事日</button>
+          <button class="day-log-toggle-btn ${dl.isHoliday ? 'active' : ''}" onclick="setDayLogHoliday(true)">🏖️ 休日</button>
+        </div>
+        <div class="mood-grid">
+          ${MOODS.map(m => '<button class="mood-btn ' + (savedMoods.includes(m) ? 'active' : '') + '" onclick="toggleMood(\'' + m + '\')">' + m + '</button>').join('')}
+        </div>
+        <textarea class="memo-field" id="dayLogMemo" placeholder="今日の一言メモ（任意）">${dl.memo || ''}</textarea>
+        <button class="btn btn-secondary btn-sm day-log-save-btn" onclick="saveDayLogEntry('${calState.selectedDate}')">💾 メモを保存</button>      </div>
+    `;
+
+    // 振り返りAIコメント（保存済みがあれば表示）
+    if (dl.aiComment) {
+      html += `
+        <div class="ai-praise-card" style="margin-top:12px">
+          <div class="ai-praise-header">
+            <div class="ai-icon">🌸</div>
+            <div><div class="ai-label">振り返りコメント</div></div>
+          </div>
+          <div class="ai-text">${dl.aiComment.replace(/\n/g,'<br>')}</div>
+        </div>
+      `;
+    }
+
     html += `</div></div>
       <button class="btn btn-primary" style="margin-top:8px" onclick="openCalReviewModal('${calState.selectedDate}')">
         🌸 この日を振り返る
@@ -1975,6 +2107,7 @@ function closeMealModal() {
 }
 
 function resetMealModal() {
+  isSavingMeal = false; // ロック解除
   document.getElementById('mealStep1').style.display = 'block';
   document.getElementById('mealStep2').style.display = 'none';
   document.getElementById('mealAnalyzing').style.display = 'none';
@@ -1983,6 +2116,9 @@ function resetMealModal() {
   document.getElementById('mealImageInput').value = '';
   document.getElementById('mealNote1').value = '';
   window._mealImageBase64 = null;
+  // 保存ボタンもリセット
+  const btn = document.querySelector('#mealStep2 .btn-primary');
+  if (btn) { btn.disabled = false; btn.textContent = '保存'; }
 }
 
 // 画像選択後：プレビュー表示＋補足欄を出す
@@ -2414,6 +2550,102 @@ async function deleteMealFromCalendar(date, time) {
   if (date === state.recordingDate) renderToday();
 }
 
+let isSavingMetric = false;
+
+async function saveBodyMetricToday() {
+  if (isSavingMetric) return;
+  isSavingMetric = true;
+
+  const date = state.recordingDate;
+  const weight = parseFloat(document.getElementById('todayWeight')?.value) || 0;
+  const bodyfat = parseFloat(document.getElementById('todayBodyfat')?.value) || 0;
+
+  if (!weight && !bodyfat) {
+    showToast('体重か体脂肪率を入力してください', true);
+    isSavingMetric = false;
+    return;
+  }
+
+  // ローカル更新
+  state.bodyMetrics[date] = { weight, bodyfat };
+  if (weight) state.profile.weight = String(weight);
+  if (bodyfat) state.profile.bodyfat = String(bodyfat);
+
+  try {
+    await gasPost({ action: 'saveBodyMetric', date, weight, bodyfat });
+    showToast('⚖️ 体重を記録しました');
+  } catch(e) {
+    showToast('保存失敗', true);
+  } finally {
+    isSavingMetric = false;
+  }
+}
+
+// =============================================
+// DAY LOG（日記・気分・仕事/休日）
+// =============================================
+function setDayLogHoliday(isHoliday) {
+  const date = calState.selectedDate;
+  if (!date) return;
+  if (!state.dayLogs[date]) state.dayLogs[date] = { isHoliday: false, moods: '', memo: '', aiComment: '' };
+  state.dayLogs[date].isHoliday = isHoliday;
+  // ボタンの見た目だけ更新
+  document.querySelectorAll('.day-log-toggle-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === (isHoliday ? 1 : 0));
+  });
+}
+
+function toggleMood(emoji) {
+  const date = calState.selectedDate;
+  if (!date) return;
+  if (!state.dayLogs[date]) state.dayLogs[date] = { isHoliday: false, moods: '', memo: '', aiComment: '' };
+  const moods = state.dayLogs[date].moods ? state.dayLogs[date].moods.split(',').filter(Boolean) : [];
+  const idx = moods.indexOf(emoji);
+  if (idx >= 0) moods.splice(idx, 1);
+  else moods.push(emoji);
+  state.dayLogs[date].moods = moods.join(',');
+  // ボタンの見た目を更新
+  document.querySelectorAll('.mood-btn').forEach(btn => {
+    btn.classList.toggle('active', moods.includes(btn.textContent));
+  });
+}
+
+let isSavingDayLog = false;
+
+async function saveDayLogEntry(date) {
+  if (isSavingDayLog) return;
+  isSavingDayLog = true;
+
+  if (!state.dayLogs[date]) state.dayLogs[date] = { isHoliday: false, moods: '', memo: '', aiComment: '' };
+  state.dayLogs[date].memo = document.getElementById('dayLogMemo')?.value || '';
+
+  const dayLog = {
+    date,
+    isHoliday: state.dayLogs[date].isHoliday || false,
+    moods: state.dayLogs[date].moods || '',
+    memo: state.dayLogs[date].memo || '',
+    aiComment: state.dayLogs[date].aiComment || '',
+  };
+
+  // カレンダーからの体重入力も保存
+  const calWeight = parseFloat(document.getElementById('calWeight')?.value) || 0;
+  const calBodyfat = parseFloat(document.getElementById('calBodyfat')?.value) || 0;
+
+  try {
+    await gasPost({ action: 'saveDayLog', dayLog });
+    if (calWeight || calBodyfat) {
+      await gasPost({ action: 'saveBodyMetric', date, weight: calWeight, bodyfat: calBodyfat });
+      state.bodyMetrics[date] = { weight: calWeight, bodyfat: calBodyfat };
+    }
+    showToast('💾 メモを保存しました');
+    renderCalendar();
+  } catch(e) {
+    showToast('保存失敗', true);
+  } finally {
+    isSavingDayLog = false;
+  }
+}
+
 // =============================================
 // CALENDAR REVIEW (AI褒め)
 // =============================================
@@ -2445,7 +2677,14 @@ async function doCalReview(date) {
   const trainerName = document.getElementById('calReviewTrainer').value || state.trainerReview || '佐々木舞香';
   const log = state.history[date] || [];
   const meals = state.meals[date] || [];
+  const dl = state.dayLogs[date] || {};
   const nickname = state.profile?.nickname || 'ガッキー';
+
+  const dayLogContext = [
+    dl.isHoliday !== undefined ? (dl.isHoliday ? '休日' : '仕事日') : '',
+    dl.moods ? `気分: ${dl.moods}` : '',
+    dl.memo ? `メモ: ${dl.memo}` : '',
+  ].filter(Boolean).join(' / ');
 
   const recordSummary = log.map(e => {
     if (e.type === 'cardio') return `${e.name}: ${e.time||''}分`;
@@ -2476,11 +2715,19 @@ ${recordSummary}
 【${formatDate(date)}の食事記録】
 ${mealSummary}
 
+${dayLogContext ? '【その日のコンテキスト】\n' + dayLogContext : ''}
+
 250〜300文字程度で、キャラクター特性に忠実に返してください。呼びかけは「${nickname}」を使ってください。`;
 
   try {
     const result = await gasPost({ action: 'getAiComment', prompt, trainerName });
     const text = result.status === 'ok' ? result.text : '今日もよく頑張りました！';
+
+    // day_logsにコメントを保存
+    if (!state.dayLogs[date]) state.dayLogs[date] = {};
+    state.dayLogs[date].aiComment = text;
+    try { await gasPost({ action: 'saveDayLogAiComment', date, comment: text }); } catch(e) {}
+
     document.getElementById('calReviewResult').innerHTML = `
       <div class="ai-praise-card" style="margin-bottom:12px">
         <div class="ai-praise-header">
@@ -2705,10 +2952,27 @@ function jumpToRecord(itemJson) {
   document.getElementById('addSetBtn').style.display = isCardio ? 'none' : 'inline-block';
   document.getElementById('inputMemo').value = '';
 
-  // 目標値をプレースホルダーに表示
+  // 重量・回数をリセットしてから初期値をセット
   if (!isCardio) {
-    if (item.weight) document.getElementById('inputWeight').placeholder = `目標 ${item.weight}kg`;
-    if (item.reps) document.getElementById('inputReps').placeholder = `目標 ${item.reps}回`;
+    const weightInput = document.getElementById('inputWeight');
+    const repsInput = document.getElementById('inputReps');
+    weightInput.value = '';
+    repsInput.value = '';
+
+    // メニューの目標値を優先、なければ前回記録
+    if (item.weight) {
+      weightInput.value = item.weight;
+      weightInput.placeholder = `目標 ${item.weight}kg`;
+    } else {
+      const initial = getInitialWeight(item.name);
+      if (initial) {
+        weightInput.value = initial.weight;
+        weightInput.placeholder = `前回 ${initial.weight}kg`;
+      } else {
+        weightInput.placeholder = '重量';
+      }
+    }
+    if (item.reps) repsInput.placeholder = `目標 ${item.reps}回`;
   } else {
     if (item.time) document.getElementById('cardioTime').placeholder = `目標 ${item.time}分`;
   }
@@ -2793,6 +3057,28 @@ function checkPR(exName, weight, reps) {
     }
   }
   return bestVol > 0 && weight * reps > bestVol;
+}
+
+// 初期重量を取得（優先順位：メニュー目標 > 前回記録 > 空欄）
+function getInitialWeight(exName) {
+  // ① メニューの目標重量を確認
+  const activeMenu = state.activeMenu ? state.menus[state.activeMenu] : null;
+  if (activeMenu?.items) {
+    const menuItem = activeMenu.items.find(item => item.name === exName);
+    if (menuItem?.weight) return { weight: menuItem.weight, reps: menuItem.reps, source: 'menu' };
+  }
+  // ② 前回の記録を確認
+  const dates = Object.keys(state.history).filter(d => d !== state.recordingDate).sort((a,b) => b.localeCompare(a));
+  for (const date of dates) {
+    for (const entry of state.history[date]) {
+      if (entry.name === exName && entry.sets?.length > 0) {
+        const last = entry.sets[entry.sets.length - 1];
+        return { weight: last.weight, reps: last.reps, source: 'prev' };
+      }
+    }
+  }
+  // ③ どちらもない
+  return null;
 }
 
 function getPrevRecord(exName) {
@@ -2911,6 +3197,133 @@ function pinDelete() {
 function clearBodyPin() {
   document.getElementById('profBodyPin').value = '';
   showToast('PINをクリアしました。保存してください。');
+}
+
+// =============================================
+// BODY METRICS GRAPH
+// =============================================
+let metricsGraphPeriod = '30d';
+
+function setMetricsGraphPeriod(period) {
+  metricsGraphPeriod = period;
+  renderCalendar();
+}
+
+function renderBodyMetricsGraph() {
+  const metrics = state.bodyMetrics || {};
+  const allDates = Object.keys(metrics).sort();
+  if (allDates.length < 2) return ''; // データが2件未満は表示しない
+
+  // 期間フィルタ
+  const today = getTodayStr();
+  let fromDate;
+  if (metricsGraphPeriod === '7d') {
+    const d = new Date(); d.setDate(d.getDate() - 6);
+    fromDate = d.toISOString().slice(0,10);
+  } else if (metricsGraphPeriod === '30d') {
+    const d = new Date(); d.setDate(d.getDate() - 29);
+    fromDate = d.toISOString().slice(0,10);
+  } else {
+    fromDate = allDates[0]; // 全期間
+  }
+
+  const filtered = allDates.filter(d => d >= fromDate && d <= today);
+  if (filtered.length < 2) return '';
+
+  const weights = filtered.map(d => metrics[d].weight).filter(v => v > 0);
+  const fats = filtered.map(d => metrics[d].bodyfat).filter(v => v > 0);
+  if (weights.length < 2) return '';
+
+  // SVGグラフ描画
+  const W = 320, H = 120, PAD = { top: 10, right: 10, bottom: 24, left: 36 };
+  const gW = W - PAD.left - PAD.right;
+  const gH = H - PAD.top - PAD.bottom;
+
+  // 体重グラフ
+  const wMin = Math.min(...weights) - 1;
+  const wMax = Math.max(...weights) + 1;
+  const wDates = filtered.filter(d => metrics[d].weight > 0);
+
+  function xPos(i, total) { return PAD.left + (i / Math.max(total-1,1)) * gW; }
+  function yPosW(v) { return PAD.top + gH - ((v - wMin) / (wMax - wMin)) * gH; }
+
+  let wPath = '';
+  let wDots = '';
+  wDates.forEach((d, i) => {
+    const x = xPos(i, wDates.length);
+    const y = yPosW(metrics[d].weight);
+    wPath += i === 0 ? `M${x},${y}` : `L${x},${y}`;
+    wDots += `<circle cx="${x}" cy="${y}" r="3" fill="#ff3d6b"/>`;
+  });
+
+  // 体脂肪率グラフ（右軸）
+  const fDates = filtered.filter(d => metrics[d].bodyfat > 0);
+  let fPath = '';
+  let fDots = '';
+  if (fDates.length >= 2) {
+    const fMin = Math.min(...fats) - 1;
+    const fMax = Math.max(...fats) + 1;
+    function yPosF(v) { return PAD.top + gH - ((v - fMin) / (fMax - fMin)) * gH; }
+    fDates.forEach((d, i) => {
+      const x = xPos(i, fDates.length);
+      const y = yPosF(metrics[d].bodyfat);
+      fPath += i === 0 ? `M${x},${y}` : `L${x},${y}`;
+      fDots += `<circle cx="${x}" cy="${y}" r="3" fill="#ff8c42"/>`;
+    });
+  }
+
+  // X軸ラベル（最大5個）
+  const labelStep = Math.max(1, Math.floor(wDates.length / 4));
+  let xLabels = '';
+  wDates.forEach((d, i) => {
+    if (i % labelStep === 0 || i === wDates.length - 1) {
+      const x = xPos(i, wDates.length);
+      const label = `${parseInt(d.slice(5,7))}/${parseInt(d.slice(8,10))}`;
+      xLabels += `<text x="${x}" y="${H - 4}" text-anchor="middle" font-size="9" fill="#666">${label}</text>`;
+    }
+  });
+
+  // Y軸ラベル
+  const yLabels = `
+    <text x="${PAD.left - 4}" y="${PAD.top + 4}" text-anchor="end" font-size="9" fill="#ff3d6b">${wMax.toFixed(1)}</text>
+    <text x="${PAD.left - 4}" y="${PAD.top + gH + 4}" text-anchor="end" font-size="9" fill="#ff3d6b">${wMin.toFixed(1)}</text>
+  `;
+
+  const latestWeight = weights[weights.length - 1];
+  const firstWeight = weights[0];
+  const diff = (latestWeight - firstWeight).toFixed(1);
+  const diffStr = diff > 0 ? `+${diff}` : `${diff}`;
+  const diffColor = diff <= 0 ? 'var(--success)' : 'var(--accent)';
+
+  const periodBtns = ['7d','30d','all'].map(p =>
+    `<button class="metrics-period-btn ${metricsGraphPeriod === p ? 'active' : ''}" onclick="setMetricsGraphPeriod('${p}')">${p === '7d' ? '7日' : p === '30d' ? '30日' : '全期間'}</button>`
+  ).join('');
+
+  return `
+    <div class="metrics-graph-wrap">
+      <div class="metrics-graph-title">
+        <span>⚖️ 体重推移 <span style="color:${diffColor};font-size:12px">${diffStr}kg</span></span>
+        <div class="metrics-period-btns">${periodBtns}</div>
+      </div>
+      <div class="metrics-svg-wrap">
+        <svg width="${W}" height="${H}" style="width:100%;height:auto">
+          <line x1="${PAD.left}" y1="${PAD.top}" x2="${PAD.left}" y2="${PAD.top+gH}" stroke="#333" stroke-width="1"/>
+          <line x1="${PAD.left}" y1="${PAD.top+gH}" x2="${PAD.left+gW}" y2="${PAD.top+gH}" stroke="#333" stroke-width="1"/>
+          ${yLabels}
+          ${xLabels}
+          ${fPath ? `<path d="${fPath}" fill="none" stroke="#ff8c42" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>` : ''}
+          ${fDots}
+          <path d="${wPath}" fill="none" stroke="#ff3d6b" stroke-width="2"/>
+          ${wDots}
+        </svg>
+      </div>
+      <div class="metrics-legend">
+        <div class="metrics-legend-item"><div class="metrics-legend-dot" style="background:#ff3d6b"></div>体重</div>
+        ${fPath ? '<div class="metrics-legend-item"><div class="metrics-legend-dot" style="background:#ff8c42"></div>体脂肪率</div>' : ''}
+        <div style="margin-left:auto;font-size:11px;color:var(--text-dim)">${filtered[0].slice(5).replace('-','/')} 〜 ${today.slice(5).replace('-','/')}</div>
+      </div>
+    </div>
+  `;
 }
 
 // =============================================
