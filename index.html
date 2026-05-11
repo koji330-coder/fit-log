@@ -2084,8 +2084,6 @@ function calNav(dir) {
 }
 
 function calSelectDate(dateStr) {
-  const hasData = !!(state.history[dateStr]?.length) || !!(state.meals[dateStr]?.length);
-  if (!hasData) return;
   calState.selectedDate = calState.selectedDate === dateStr ? null : dateStr;
   renderCalendar();
 }
