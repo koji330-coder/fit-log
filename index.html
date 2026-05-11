@@ -1169,7 +1169,6 @@ let state = {
   dayLogs: {},
   bodyMetrics: {}, // { 'YYYY-MM-DD': { weight, bodyfat } }
 };
-};
 
 let calState = { year: new Date().getFullYear(), month: new Date().getMonth(), selectedDate: null };
 
@@ -1936,11 +1935,17 @@ function renderCalendar() {
 
   html += `</div>`;
 
-  if (calState.selectedDate && (state.history[calState.selectedDate]?.length || state.meals[calState.selectedDate]?.length)) {
+  if (calState.selectedDate) {
     const log = state.history[calState.selectedDate] || [];
     const meals = state.meals[calState.selectedDate] || [];
+    const hasRecords = log.length > 0 || meals.length > 0;
 
     html += `<div class="cal-detail"><div class="cal-detail-date">📅 ${formatDate(calState.selectedDate)}</div><div class="cal-detail-body">`;
+
+    // 記録なしの日
+    if (!hasRecords) {
+      html += `<div style="text-align:center;padding:12px 0;color:var(--text-dim);font-size:13px">この日の記録はありません</div>`;
+    }
 
     // 筋トレ記録
     if (log.length > 0) {
