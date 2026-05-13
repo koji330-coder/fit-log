@@ -493,6 +493,58 @@
   }
   .meal-select:focus { outline: none; border-color: var(--accent); }
 
+  /* POKEDEX */
+  .pokedex-filter-row { display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:10px; scrollbar-width:none; }
+  .pokedex-filter-row::-webkit-scrollbar { display:none; }
+  .pokedex-filter-btn {
+    padding:5px 12px; border-radius:20px; border:1.5px solid var(--border);
+    background:var(--surface2); color:var(--text-dim); font-size:11px; font-weight:700;
+    cursor:pointer; white-space:nowrap; font-family:'Noto Sans JP',sans-serif; transition:all 0.15s;
+  }
+  .pokedex-filter-btn.active { border-color:var(--accent); background:rgba(255,61,107,0.12); color:var(--text); }
+  .pokedex-rankup-section {
+    background:rgba(255,61,107,0.06); border:1.5px solid rgba(255,61,107,0.2);
+    border-radius:12px; padding:12px 14px; margin-bottom:14px;
+  }
+  .pokedex-rankup-title { font-size:11px; font-weight:900; letter-spacing:2px; color:var(--accent); margin-bottom:8px; }
+  .pokedex-rankup-item { font-size:12px; color:var(--text); padding:3px 0; }
+  .pokedex-group-title {
+    font-size:11px; font-weight:900; letter-spacing:2px; color:var(--text-dim);
+    margin:14px 0 8px; padding-bottom:4px; border-bottom:1px solid var(--border);
+  }
+  .pokedex-card {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 14px; background:var(--surface); border:1.5px solid var(--border);
+    border-radius:10px; margin-bottom:6px; cursor:pointer; transition:all 0.15s;
+  }
+  .pokedex-card:hover { border-color:var(--accent); }
+  .pokedex-card-left { display:flex; align-items:center; gap:10px; }
+  .pokedex-rank-icon { font-size:20px; width:28px; text-align:center; }
+  .pokedex-card-name { font-size:14px; font-weight:700; }
+  .pokedex-card-part { font-size:11px; color:var(--text-dim); margin-top:2px; }
+  .pokedex-card-right { text-align:right; font-size:11px; color:var(--accent); font-weight:700; }
+  .pokedex-modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:200;
+    display:flex; align-items:flex-end; justify-content:center;
+  }
+  .pokedex-modal-box {
+    background:var(--surface); border-radius:20px 20px 0 0;
+    padding:20px; width:100%; max-width:480px; max-height:85vh; overflow-y:auto;
+  }
+  .pokedex-modal-rank { font-size:36px; text-align:center; margin-bottom:4px; }
+  .pokedex-modal-name { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:3px; text-align:center; }
+  .pokedex-modal-part { font-size:12px; color:var(--text-dim); text-align:center; margin-bottom:16px; }
+  .pokedex-stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px; }
+  .pokedex-stat-item { background:var(--bg); border-radius:10px; padding:10px; text-align:center; }
+  .pokedex-stat-val { font-family:'Bebas Neue',sans-serif; font-size:22px; color:var(--accent); }
+  .pokedex-stat-label { font-size:10px; color:var(--text-dim); font-weight:700; margin-top:2px; }
+  .pokedex-flavor { background:rgba(255,61,107,0.05); border-left:3px solid var(--accent); padding:10px 14px; border-radius:0 8px 8px 0; font-size:12px; line-height:1.7; color:var(--text); margin-bottom:14px; }
+  .pokedex-flavor-date { font-size:10px; color:var(--text-dim); margin-top:6px; }
+  .pokedex-memos { font-size:12px; }
+  .pokedex-memo-item { padding:6px 0; border-bottom:1px solid var(--border); color:var(--text-dim); }
+  .pokedex-memo-date { font-size:10px; color:var(--accent); margin-bottom:2px; }
+  .pokedex-nextrank { text-align:center; padding:10px; background:rgba(255,140,66,0.08); border-radius:10px; font-size:13px; font-weight:700; color:#ff8c42; margin-bottom:14px; }
+
   /* BODY METRICS GRAPH */
   .metrics-graph-wrap {
     background: var(--surface); border: 1.5px solid var(--border);
@@ -1168,6 +1220,7 @@ let state = {
   bodyPhotos: [],
   dayLogs: {},
   bodyMetrics: {}, // { 'YYYY-MM-DD': { weight, bodyfat } }
+  pokedexEntries: {}, // { machineName: { flavorText, generatedAt, ... } }
 };
 
 let calState = { year: new Date().getFullYear(), month: new Date().getMonth(), selectedDate: null };
@@ -1216,6 +1269,7 @@ async function init() {
       state.bodyPhotos = result.bodyPhotos || [];
       state.dayLogs = result.dayLogs || {};
       state.bodyMetrics = result.bodyMetrics || {};
+      state.pokedexEntries = result.pokedexEntries || {};
     } else {
       showToast('データ読み込みエラー', true);
     }
@@ -3019,40 +3073,232 @@ async function importMenu() {
 }
 
 // =============================================
+// =============================================
+// POKEDEX STATE
+// =============================================
+let pokedexFilter = { part: 'all', rank: 'all' };
+
+function setPokedexFilter(type, val) {
+  pokedexFilter[type] = val;
+  renderComplete();
+}
+
+// =============================================
+// COMPLETE SCREEN (図鑑)
+// =============================================
+function buildMachineStats() {
+  const stats = {};
+  Object.entries(state.history).forEach(([date, entries]) => {
+    entries.forEach(entry => {
+      if (entry.type !== 'strength') return;
+      const name = entry.name;
+      if (!stats[name]) {
+        stats[name] = {
+          name, area: entry.area, part: entry.part || '',
+          daysUsed: 0, maxWeight: 0, maxReps: 0, bestSet: null,
+          prCount: 0, firstDate: date, lastDate: date, memos: []
+        };
+      }
+      const s = stats[name];
+      s.daysUsed++;
+      if (date > s.lastDate) s.lastDate = date;
+      if (date < s.firstDate) s.firstDate = date;
+      (entry.sets || []).forEach(set => {
+        if (set.weight > s.maxWeight) s.maxWeight = set.weight;
+        if (set.reps > s.maxReps) s.maxReps = set.reps;
+        if (!s.bestSet || set.weight * set.reps > s.bestSet.weight * s.bestSet.reps) {
+          s.bestSet = { weight: set.weight, reps: set.reps };
+        }
+        if (set.isPR) s.prCount++;
+      });
+      if (entry.memo) s.memos.push({ date, text: entry.memo });
+    });
+  });
+  return stats;
+}
+
+function getRank(daysUsed) {
+  if (daysUsed === 0) return { icon: '⬜', label: '未挑戦', level: 0 };
+  if (daysUsed < 5)  return { icon: '🥉', label: 'ブロンズ', level: 1, next: 5 };
+  if (daysUsed < 10) return { icon: '🥈', label: 'シルバー', level: 2, next: 10 };
+  if (daysUsed < 20) return { icon: '🥇', label: 'ゴールド', level: 3, next: 20 };
+  return { icon: '💎', label: 'ダイヤ', level: 4 };
+}
+
 function renderComplete() {
   const container = document.getElementById('completeContent');
-  const doneMap = {};
-  for (const [date, log] of Object.entries(state.history)) {
-    for (const entry of log) {
-      if (!doneMap[entry.name] || date < doneMap[entry.name]) doneMap[entry.name] = date;
-    }
-  }
+  const machineStats = buildMachineStats();
 
-  let totalEx = 0, doneEx = 0;
+  // 全種目リスト（MACHINES定数から）
+  let totalEx = 0;
+  const allExercises = [];
   for (const area of Object.values(MACHINES)) {
-    totalEx += area.exercises.length;
-    for (const ex of area.exercises) { if (doneMap[ex.name]) doneEx++; }
-  }
-
-  const pct = totalEx > 0 ? Math.round(doneEx / totalEx * 100) : 0;
-  let trophy = '🌱';
-  if (pct >= 100) trophy = '🏆';
-  else if (pct >= 75) trophy = '🥇';
-  else if (pct >= 50) trophy = '🥈';
-  else if (pct >= 25) trophy = '🥉';
-
-  let html = `<div class="complete-header"><div class="complete-trophy">${trophy}</div><div class="complete-count">${doneEx} / ${totalEx}</div><div style="font-size:13px;font-weight:700;margin-bottom:8px">マシン制覇率 ${pct}%</div><div class="complete-progress-wrap"><div class="complete-progress-bar" style="width:${pct}%"></div></div><div class="complete-progress-text">${pct < 100 ? `あと ${totalEx - doneEx} 種目でコンプリート！` : '🎉 全マシン制覇達成！！'}</div></div>`;
-
-  for (const [, area] of Object.entries(MACHINES)) {
-    const areaDone = area.exercises.filter(ex => doneMap[ex.name]).length;
-    html += `<div class="complete-area-section"><div class="complete-area-title">${area.icon} ${area.name}<span class="area-done">${areaDone}/${area.exercises.length}</span></div><div class="complete-grid">`;
     for (const ex of area.exercises) {
-      const done = !!doneMap[ex.name];
-      html += `<div class="complete-ex-chip ${done?'done':''}"><span class="chip-icon">${done?'✅':'⬜'}</span><div><div>${ex.name}</div>${done?`<div class="chip-date">${formatDate(doneMap[ex.name])}</div>`:''}</div></div>`;
+      totalEx++;
+      const s = machineStats[ex.name] || { name: ex.name, area: area.name, part: ex.part || '', daysUsed: 0, maxWeight: 0, maxReps: 0, bestSet: null, prCount: 0, firstDate: null, lastDate: null, memos: [] };
+      allExercises.push({ ...s, areaName: area.name, areaIcon: area.icon });
     }
-    html += `</div></div>`;
   }
+  const doneEx = allExercises.filter(e => e.daysUsed > 0).length;
+  const pct = Math.round(doneEx / totalEx * 100);
+
+  // もうすぐランクアップ
+  const rankupSoon = allExercises
+    .filter(e => {
+      const r = getRank(e.daysUsed);
+      return r.next && (r.next - e.daysUsed) <= 3 && e.daysUsed > 0;
+    })
+    .sort((a, b) => {
+      const ra = getRank(a.daysUsed), rb = getRank(b.daysUsed);
+      return (ra.next - a.daysUsed) - (rb.next - b.daysUsed);
+    })
+    .slice(0, 5);
+
+  // フィルタ適用
+  const PART_FILTERS = ['all','胸','背中','脚','腹','腕','肩','有酸素'];
+  const RANK_FILTERS = [
+    { val:'all', label:'全て' },
+    { val:'0', label:'未挑戦' },
+    { val:'1', label:'🥉' },
+    { val:'2', label:'🥈' },
+    { val:'3', label:'🥇' },
+    { val:'4', label:'💎' },
+  ];
+
+  const filtered = allExercises.filter(e => {
+    const rank = getRank(e.daysUsed);
+    const partOk = pokedexFilter.part === 'all' || e.part === pokedexFilter.part || e.areaName.includes(pokedexFilter.part);
+    const rankOk = pokedexFilter.rank === 'all' || String(rank.level) === pokedexFilter.rank;
+    return partOk && rankOk;
+  });
+
+  // 部位別グループ
+  const groups = {};
+  filtered.forEach(e => {
+    const key = e.part || e.areaName;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(e);
+  });
+
+  let html = `
+    <div class="complete-header">
+      <div class="complete-trophy">${pct >= 100 ? '🏆' : pct >= 75 ? '🥇' : pct >= 50 ? '🥈' : pct >= 25 ? '🥉' : '🌱'}</div>
+      <div class="complete-count">${doneEx} / ${totalEx}</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px">マシン制覇率 ${pct}%</div>
+      <div class="complete-progress-wrap"><div class="complete-progress-bar" style="width:${pct}%"></div></div>
+    </div>
+  `;
+
+  // もうすぐランクアップ
+  if (rankupSoon.length > 0) {
+    html += `<div class="pokedex-rankup-section"><div class="pokedex-rankup-title">🔥 もうすぐランクアップ！</div>`;
+    rankupSoon.forEach(e => {
+      const r = getRank(e.daysUsed);
+      const nextRank = getRank(r.next);
+      html += `<div class="pokedex-rankup-item">${e.name}　あと${r.next - e.daysUsed}回で${nextRank.icon}</div>`;
+    });
+    html += `</div>`;
+  }
+
+  // フィルター
+  html += `<div class="pokedex-filter-row">`;
+  PART_FILTERS.forEach(p => {
+    html += `<button class="pokedex-filter-btn ${pokedexFilter.part===p?'active':''}" onclick="setPokedexFilter('part','${p}')">${p==='all'?'全部位':p}</button>`;
+  });
+  html += `</div><div class="pokedex-filter-row">`;
+  RANK_FILTERS.forEach(r => {
+    html += `<button class="pokedex-filter-btn ${pokedexFilter.rank===r.val?'active':''}" onclick="setPokedexFilter('rank','${r.val}')">${r.label}</button>`;
+  });
+  html += `</div>`;
+
+  // 部位別グループ表示
+  Object.entries(groups).forEach(([groupName, exercises]) => {
+    html += `<div class="pokedex-group-title">${groupName}</div>`;
+    exercises.forEach(e => {
+      const rank = getRank(e.daysUsed);
+      const nextInfo = rank.next ? `<div class="pokedex-card-right">あと${rank.next - e.daysUsed}回で${getRank(rank.next).icon}</div>` : `<div class="pokedex-card-right" style="color:var(--text-dim)">MAX</div>`;
+      html += `
+        <div class="pokedex-card" onclick="openPokedexModal('${e.name}')">
+          <div class="pokedex-card-left">
+            <div class="pokedex-rank-icon">${rank.icon}</div>
+            <div>
+              <div class="pokedex-card-name">${e.name}</div>
+              <div class="pokedex-card-part">${rank.label}${e.daysUsed > 0 ? ' · ' + e.daysUsed + '日' : ''}</div>
+            </div>
+          </div>
+          ${rank.next ? nextInfo : `<div class="pokedex-card-right" style="color:var(--text-dim)">💎 MAX</div>`}
+        </div>
+      `;
+    });
+  });
+
   container.innerHTML = html;
+}
+
+function openPokedexModal(machineName) {
+  const stats = buildMachineStats();
+  const s = stats[machineName];
+  const rank = getRank(s ? s.daysUsed : 0);
+  const pokedex = state.pokedexEntries[machineName] || {};
+
+  const modal = document.createElement('div');
+  modal.className = 'pokedex-modal-overlay';
+  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+
+  const nextRankInfo = rank.next
+    ? `<div class="pokedex-nextrank">あと${rank.next - (s?.daysUsed||0)}回で${getRank(rank.next).icon} ${getRank(rank.next).label}</div>`
+    : '';
+
+  const memoHtml = s?.memos?.length > 0
+    ? `<div style="font-size:11px;font-weight:900;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">📝 あなたのメモ</div>
+       <div class="pokedex-memos">${s.memos.slice().reverse().map(m => `
+         <div class="pokedex-memo-item">
+           <div class="pokedex-memo-date">${formatDate(m.date)}</div>
+           <div>${m.text}</div>
+         </div>`).join('')}
+       </div>`
+    : `<div style="font-size:12px;color:var(--text-dim)">まだメモがありません。種目を記録するときにメモを残してみましょう。</div>`;
+
+  const flavorHtml = pokedex.flavorText
+    ? `<div class="pokedex-flavor">
+        📖 ${pokedex.flavorText}
+        <div class="pokedex-flavor-date">更新：${pokedex.generatedAt || '未生成'}</div>
+       </div>`
+    : `<div class="pokedex-flavor" style="color:var(--text-dim)">📖 まだ図鑑説明文がありません。<br>記録を積み重ねると深夜に自動生成されます。</div>`;
+
+  modal.innerHTML = `
+    <div class="pokedex-modal-box">
+      <div class="pokedex-modal-rank">${rank.icon}</div>
+      <div class="pokedex-modal-name">${machineName}</div>
+      <div class="pokedex-modal-part">${s?.part || ''} · ${rank.label}</div>
+      ${s && s.daysUsed > 0 ? `
+        <div class="pokedex-stats-grid">
+          <div class="pokedex-stat-item">
+            <div class="pokedex-stat-val">${s.daysUsed}</div>
+            <div class="pokedex-stat-label">挑戦日数</div>
+          </div>
+          <div class="pokedex-stat-item">
+            <div class="pokedex-stat-val">${s.prCount}</div>
+            <div class="pokedex-stat-label">PR回数</div>
+          </div>
+          <div class="pokedex-stat-item">
+            <div class="pokedex-stat-val">${s.maxWeight}</div>
+            <div class="pokedex-stat-label">最高重量kg</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;font-size:12px;color:var(--text-dim)">
+          <span>初挑戦：${formatDate(s.firstDate)}</span>
+          <span>直近：${formatDate(s.lastDate)}</span>
+        </div>
+        ${s.bestSet ? `<div style="text-align:center;font-size:13px;font-weight:700;color:var(--accent);margin-bottom:14px">🏆 ベストセット：${s.bestSet.weight}kg × ${s.bestSet.reps}回</div>` : ''}
+      ` : `<div style="text-align:center;padding:16px;color:var(--text-dim);font-size:13px">まだ挑戦していない種目です</div>`}
+      ${nextRankInfo}
+      ${flavorHtml}
+      ${memoHtml}
+      <button class="btn btn-secondary" style="margin-top:16px" onclick="this.closest('.pokedex-modal-overlay').remove()">閉じる</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
 }
 
 // =============================================
