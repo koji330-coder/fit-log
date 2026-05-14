@@ -758,6 +758,7 @@
         <img id="mealImgPreview2" class="meal-img-preview" style="display:block">
         <div class="meal-result-grid" id="mealResultGrid"></div>
         <div id="mealAiComment" class="meal-comment" style="margin-bottom:12px"></div>
+        <input type="hidden" id="mealAiCommentHidden" value="">
         <div class="input-group" style="margin-bottom:10px">
           <div class="input-label">食事タイプ</div>
           <select class="meal-select" id="mealTypeSelect">
@@ -1697,6 +1698,7 @@ function renderToday() {
               <span>C:${m.carb}g</span>
             </div>
             ${m.memo ? `<div style="font-size:11px;color:var(--text-dim);margin-top:4px">📝 ${m.memo}</div>` : ''}
+            ${m.aiComment ? `<div style="font-size:11px;color:var(--accent2);margin-top:4px;line-height:1.5">💬 ${m.aiComment}</div>` : ''}
           </div>
           <button class="meal-delete-btn" onclick="deleteMealRecord('${state.recordingDate}', '${m.time}')">🗑</button>
         </div>
@@ -2073,6 +2075,7 @@ function renderCalendar() {
               </div>
             </div>
             ${m.memo ? `<div class="log-memo" style="margin-top:4px">📝 ${m.memo}</div>` : ''}
+            ${m.aiComment ? `<div style="font-size:11px;color:var(--accent2);margin-top:4px;line-height:1.5">💬 ${m.aiComment}</div>` : ''}
           </div>
         `;
       }
@@ -2183,7 +2186,8 @@ function closeMealModal() {
 }
 
 function resetMealModal() {
-  isSavingMeal = false; // ロック解除
+  isSavingMeal = false;
+  document.getElementById('mealAiCommentHidden').value = '';
   document.getElementById('mealStep1').style.display = 'block';
   document.getElementById('mealStep2').style.display = 'none';
   document.getElementById('mealAnalyzing').style.display = 'none';
@@ -2264,6 +2268,8 @@ async function doAnalyzeMeal(base64, note) {
         <div class="meal-result-item"><div class="meal-result-val">${r.carb}g</div><div class="meal-result-label">CARB</div></div>
       `;
       document.getElementById('mealAiComment').textContent = r.comment ? `💬 ${r.comment}` : '';
+      // AIコメントをhiddenフィールドに保存して保存時に使う
+      document.getElementById('mealAiCommentHidden').value = r.comment || '';
       document.getElementById('mealFoodName').value = r.foodName || '';
       document.getElementById('mealKcal').value = r.kcal || '';
       document.getElementById('mealProtein').value = r.protein || '';
@@ -2329,6 +2335,7 @@ async function saveMealRecord() {
     fat: parseInt(document.getElementById('mealFat').value) || 0,
     carb: parseInt(document.getElementById('mealCarb').value) || 0,
     memo: document.getElementById('mealMemo').value,
+    aiComment: document.getElementById('mealAiCommentHidden').value || '',
   };
 
   try {
