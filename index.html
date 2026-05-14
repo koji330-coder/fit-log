@@ -3315,23 +3315,45 @@ function openPokedexModal(machineName) {
     : `<div style="font-size:12px;color:var(--text-dim)">まだメモがありません。種目を記録するときにメモを残してみましょう。</div>`;
 
   const master = state.machineMaster.find(m => m.machineName === machineName) || {};
-  const flavorText = master.aiFlavorText || master.defaultFlavor || 'このマシンの記録はまだない。挑戦することで、図鑑の説明文が育っていく。';
+
+  // ふたつ名 + ジムバトルログ（1行目がふたつ名、残りが本文）
+  const fullText = master.aiFlavorText || master.defaultFlavor || '';
+  const textLines = fullText.split('\n').filter(Boolean);
+  const hasNickname = master.aiNickname;
+  const nickname = master.aiNickname || '';
+  const battleLog = textLines.length > 1 ? textLines.slice(1).join('\n') : (textLines[0] || '');
   const isAiGenerated = !!master.aiFlavorText;
 
-  const flavorHtml = `<div class="pokedex-flavor">
-    📖 ${flavorText}
-    <div class="pokedex-flavor-date">${isAiGenerated ? '更新：' + master.aiGeneratedAt : '初期説明文'}</div>
-  </div>`;
+  const nicknameHtml = nickname ? `
+    <div style="text-align:center;margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">🏷️ ふたつ名</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--accent)">${nickname}</div>
+    </div>` : '';
 
-  const userNoteHtml = master.userNote ? `
-    <div style="background:rgba(255,140,66,0.08);border-left:3px solid #ff8c42;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:14px;font-size:12px;line-height:1.7">
-      ⚠️ 今の課題：${master.userNote}
+  const flavorHtml = battleLog ? `<div class="pokedex-flavor">
+    📖 ${battleLog.replace(/\n/g,'<br>')}
+    <div class="pokedex-flavor-date">${isAiGenerated ? '更新：' + master.aiGeneratedAt : '初期説明文'}</div>
+  </div>` : '';
+
+  const techniqueMemoHtml = master.techniqueMemo ? `
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:900;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">🧠 攻略メモ</div>
+      <div style="font-size:12px;line-height:1.7;color:var(--text);background:var(--bg);padding:10px 12px;border-radius:8px">${master.techniqueMemo.replace(/\n/g,'<br>')}</div>
+    </div>` : '';
+
+  const referenceHtml = master.referenceUrl ? `
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:900;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">🎥 参考</div>
+      <a href="${master.referenceUrl}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none">
+        ${master.referenceTitle || '参考リンク'} ↗
+      </a>
     </div>` : '';
   modal.innerHTML = `
     <div class="pokedex-modal-box">
       <div class="pokedex-modal-rank">${rank.icon}</div>
       <div class="pokedex-modal-name">${machineName}</div>
       <div class="pokedex-modal-part">${master.part || s?.part || ''} · ${rank.label}</div>
+      ${nicknameHtml}
       ${s && s.daysUsed > 0 ? `
         <div class="pokedex-stats-grid">
           <div class="pokedex-stat-item">
@@ -3354,13 +3376,60 @@ function openPokedexModal(machineName) {
         ${s.bestSet ? `<div style="text-align:center;font-size:13px;font-weight:700;color:var(--accent);margin-bottom:14px">🏆 ベストセット：${s.bestSet.weight}kg × ${s.bestSet.reps}回</div>` : ''}
       ` : `<div style="text-align:center;padding:16px;color:var(--text-dim);font-size:13px">まだ挑戦していない種目です</div>`}
       ${nextRankInfo}
-      ${userNoteHtml}
       ${flavorHtml}
+      ${techniqueMemoHtml}
+      ${referenceHtml}
       ${memoHtml}
-      <button class="btn btn-secondary" style="margin-top:16px" onclick="this.closest('.pokedex-modal-overlay').remove()">閉じる</button>
+      <div id="pokedex-edit-section-${machineName.replace(/\s/g,'_')}" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <button class="btn btn-secondary btn-sm" onclick="togglePokedexEdit('${machineName.replace(/'/g,"\\'")}')">✏️ 攻略メモ・URLを編集</button>
+        <div id="pokedex-edit-form-${machineName.replace(/\s/g,'_')}" style="display:none;margin-top:12px">
+          <div class="input-group" style="margin-bottom:8px">
+            <div class="input-label">🧠 攻略メモ</div>
+            <textarea class="memo-field" id="edit-technique-${machineName.replace(/\s/g,'_')}" placeholder="フォーム・効かせ方・注意点など">${master.techniqueMemo || ''}</textarea>
+          </div>
+          <div class="input-group" style="margin-bottom:8px">
+            <div class="input-label">🎥 参考タイトル</div>
+            <input class="input-field" type="text" id="edit-reftitle-${machineName.replace(/\s/g,'_')}" style="text-align:left;font-size:13px" value="${master.referenceTitle || ''}" placeholder="参考動画のタイトル">
+          </div>
+          <div class="input-group" style="margin-bottom:12px">
+            <div class="input-label">🔗 参考URL</div>
+            <input class="input-field" type="url" id="edit-refurl-${machineName.replace(/\s/g,'_')}" style="text-align:left;font-size:12px" value="${master.referenceUrl || ''}" placeholder="https://...">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveMachineNotesFromModal('${machineName.replace(/'/g,"\\'")}')">💾 保存</button>
+        </div>
+      </div>
+      <button class="btn btn-secondary" style="margin-top:12px" onclick="this.closest('.pokedex-modal-overlay').remove()">閉じる</button>
     </div>
   `;
   document.body.appendChild(modal);
+}
+
+function togglePokedexEdit(machineName) {
+  const key = machineName.replace(/\s/g,'_');
+  const form = document.getElementById(`pokedex-edit-form-${key}`);
+  if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function saveMachineNotesFromModal(machineName) {
+  const key = machineName.replace(/\s/g,'_');
+  const techniqueMemo = document.getElementById(`edit-technique-${key}`)?.value || '';
+  const referenceTitle = document.getElementById(`edit-reftitle-${key}`)?.value || '';
+  const referenceUrl = document.getElementById(`edit-refurl-${key}`)?.value || '';
+
+  try {
+    await gasPost({ action: 'updateMachineNotes', machineName, techniqueMemo, referenceTitle, referenceUrl });
+
+    // stateのmachineMasterも更新
+    const m = state.machineMaster.find(m => m.machineName === machineName);
+    if (m) { m.techniqueMemo = techniqueMemo; m.referenceTitle = referenceTitle; m.referenceUrl = referenceUrl; }
+
+    showToast('✅ 攻略メモを保存しました');
+    // モーダルを閉じて再表示
+    document.querySelector('.pokedex-modal-overlay')?.remove();
+    openPokedexModal(machineName);
+  } catch(e) {
+    showToast('保存失敗', true);
+  }
 }
 
 // =============================================
