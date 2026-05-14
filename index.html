@@ -1230,7 +1230,8 @@ let state = {
   bodyPhotos: [],
   dayLogs: {},
   bodyMetrics: {}, // { 'YYYY-MM-DD': { weight, bodyfat } }
-  pokedexEntries: {}, // { machineName: { flavorText, generatedAt, ... } }
+  pokedexEntries: {}, // 後方互換（machine_masterに統合済み）
+  machineMaster: [],
 };
 
 let calState = { year: new Date().getFullYear(), month: new Date().getMonth(), selectedDate: null };
@@ -1279,7 +1280,7 @@ async function init() {
       state.bodyPhotos = result.bodyPhotos || [];
       state.dayLogs = result.dayLogs || {};
       state.bodyMetrics = result.bodyMetrics || {};
-      state.pokedexEntries = result.pokedexEntries || {};
+      state.machineMaster = result.machineMaster || [];
     } else {
       showToast('データ読み込みエラー', true);
     }
@@ -3100,27 +3101,29 @@ function buildMachineStats() {
   const stats = {};
   Object.entries(state.history).forEach(([date, entries]) => {
     entries.forEach(entry => {
-      if (entry.type !== 'strength') return;
       const name = entry.name;
       if (!stats[name]) {
         stats[name] = {
           name, area: entry.area, part: entry.part || '',
           daysUsed: 0, maxWeight: 0, maxReps: 0, bestSet: null,
-          prCount: 0, firstDate: date, lastDate: date, memos: []
+          prCount: 0, firstDate: date, lastDate: date, memos: [],
+          type: entry.type,
         };
       }
       const s = stats[name];
       s.daysUsed++;
       if (date > s.lastDate) s.lastDate = date;
       if (date < s.firstDate) s.firstDate = date;
-      (entry.sets || []).forEach(set => {
-        if (set.weight > s.maxWeight) s.maxWeight = set.weight;
-        if (set.reps > s.maxReps) s.maxReps = set.reps;
-        if (!s.bestSet || set.weight * set.reps > s.bestSet.weight * s.bestSet.reps) {
-          s.bestSet = { weight: set.weight, reps: set.reps };
-        }
-        if (set.isPR) s.prCount++;
-      });
+      if (entry.type === 'strength') {
+        (entry.sets || []).forEach(set => {
+          if (set.weight > s.maxWeight) s.maxWeight = set.weight;
+          if (set.reps > s.maxReps) s.maxReps = set.reps;
+          if (!s.bestSet || set.weight * set.reps > s.bestSet.weight * s.bestSet.reps) {
+            s.bestSet = { weight: set.weight, reps: set.reps };
+          }
+          if (set.isPR) s.prCount++;
+        });
+      }
       if (entry.memo) s.memos.push({ date, text: entry.memo });
     });
   });
@@ -3128,10 +3131,11 @@ function buildMachineStats() {
 }
 
 function getRank(daysUsed) {
-  if (daysUsed === 0) return { icon: '⬜', label: '未挑戦', level: 0 };
-  if (daysUsed < 5)  return { icon: '🥉', label: 'ブロンズ', level: 1, next: 5 };
-  if (daysUsed < 10) return { icon: '🥈', label: 'シルバー', level: 2, next: 10 };
-  if (daysUsed < 20) return { icon: '🥇', label: 'ゴールド', level: 3, next: 20 };
+  const n = Number(daysUsed) || 0;
+  if (n === 0) return { icon: '⬜', label: '未挑戦', level: 0 };
+  if (n < 5)   return { icon: '🥉', label: 'ブロンズ', level: 1, next: 5 };
+  if (n < 10)  return { icon: '🥈', label: 'シルバー', level: 2, next: 10 };
+  if (n < 20)  return { icon: '🥇', label: 'ゴールド', level: 3, next: 20 };
   return { icon: '💎', label: 'ダイヤ', level: 4 };
 }
 
@@ -3139,14 +3143,55 @@ function renderComplete() {
   const container = document.getElementById('completeContent');
   const machineStats = buildMachineStats();
 
-  // 全種目リスト（MACHINES定数から）
+  // machineMasterから全種目リストを構築（正のマスター）
+  const masterList = state.machineMaster.length > 0
+    ? state.machineMaster
+    : null;
+
+  // machineMasterがなければMACHINES定数にフォールバック
+  let allExercises = [];
   let totalEx = 0;
-  const allExercises = [];
-  for (const area of Object.values(MACHINES)) {
-    for (const ex of area.exercises) {
+
+  if (masterList) {
+    masterList.forEach(m => {
       totalEx++;
-      const s = machineStats[ex.name] || { name: ex.name, area: area.name, part: ex.part || '', daysUsed: 0, maxWeight: 0, maxReps: 0, bestSet: null, prCount: 0, firstDate: null, lastDate: null, memos: [] };
-      allExercises.push({ ...s, areaName: area.name, areaIcon: area.icon });
+      const s = machineStats[m.machineName];
+      allExercises.push({
+        name: m.machineName,
+        areaName: m.area,
+        part: m.part,
+        type: m.type,
+        isActive: m.isActive,
+        userNote: m.userNote,
+        defaultFlavor: m.defaultFlavor,
+        aiFlavorText: m.aiFlavorText,
+        aiGeneratedAt: m.aiGeneratedAt,
+        daysUsed: s?.daysUsed || 0,
+        maxWeight: s?.maxWeight || 0,
+        maxReps: s?.maxReps || 0,
+        bestSet: s?.bestSet || null,
+        prCount: s?.prCount || 0,
+        firstDate: s?.firstDate || null,
+        lastDate: s?.lastDate || null,
+        memos: s?.memos || [],
+      });
+    });
+  } else {
+    // フォールバック
+    for (const area of Object.values(MACHINES)) {
+      for (const ex of area.exercises) {
+        totalEx++;
+        const s = machineStats[ex.name];
+        allExercises.push({
+          name: ex.name, areaName: area.name, part: ex.part || area.name,
+          type: area.type || 'strength', isActive: true,
+          userNote: '', defaultFlavor: '', aiFlavorText: '', aiGeneratedAt: '',
+          daysUsed: s?.daysUsed || 0, maxWeight: s?.maxWeight || 0,
+          maxReps: s?.maxReps || 0, bestSet: s?.bestSet || null,
+          prCount: s?.prCount || 0, firstDate: s?.firstDate || null,
+          lastDate: s?.lastDate || null, memos: s?.memos || [],
+        });
+      }
     }
   }
   const doneEx = allExercises.filter(e => e.daysUsed > 0).length;
@@ -3269,18 +3314,24 @@ function openPokedexModal(machineName) {
        </div>`
     : `<div style="font-size:12px;color:var(--text-dim)">まだメモがありません。種目を記録するときにメモを残してみましょう。</div>`;
 
-  const flavorHtml = pokedex.flavorText
-    ? `<div class="pokedex-flavor">
-        📖 ${pokedex.flavorText}
-        <div class="pokedex-flavor-date">更新：${pokedex.generatedAt || '未生成'}</div>
-       </div>`
-    : `<div class="pokedex-flavor" style="color:var(--text-dim)">📖 まだ図鑑説明文がありません。<br>記録を積み重ねると深夜に自動生成されます。</div>`;
+  const master = state.machineMaster.find(m => m.machineName === machineName) || {};
+  const flavorText = master.aiFlavorText || master.defaultFlavor || 'このマシンの記録はまだない。挑戦することで、図鑑の説明文が育っていく。';
+  const isAiGenerated = !!master.aiFlavorText;
 
+  const flavorHtml = `<div class="pokedex-flavor">
+    📖 ${flavorText}
+    <div class="pokedex-flavor-date">${isAiGenerated ? '更新：' + master.aiGeneratedAt : '初期説明文'}</div>
+  </div>`;
+
+  const userNoteHtml = master.userNote ? `
+    <div style="background:rgba(255,140,66,0.08);border-left:3px solid #ff8c42;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:14px;font-size:12px;line-height:1.7">
+      ⚠️ 今の課題：${master.userNote}
+    </div>` : '';
   modal.innerHTML = `
     <div class="pokedex-modal-box">
       <div class="pokedex-modal-rank">${rank.icon}</div>
       <div class="pokedex-modal-name">${machineName}</div>
-      <div class="pokedex-modal-part">${s?.part || ''} · ${rank.label}</div>
+      <div class="pokedex-modal-part">${master.part || s?.part || ''} · ${rank.label}</div>
       ${s && s.daysUsed > 0 ? `
         <div class="pokedex-stats-grid">
           <div class="pokedex-stat-item">
@@ -3303,6 +3354,7 @@ function openPokedexModal(machineName) {
         ${s.bestSet ? `<div style="text-align:center;font-size:13px;font-weight:700;color:var(--accent);margin-bottom:14px">🏆 ベストセット：${s.bestSet.weight}kg × ${s.bestSet.reps}回</div>` : ''}
       ` : `<div style="text-align:center;padding:16px;color:var(--text-dim);font-size:13px">まだ挑戦していない種目です</div>`}
       ${nextRankInfo}
+      ${userNoteHtml}
       ${flavorHtml}
       ${memoHtml}
       <button class="btn btn-secondary" style="margin-top:16px" onclick="this.closest('.pokedex-modal-overlay').remove()">閉じる</button>
