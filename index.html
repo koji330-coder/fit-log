@@ -2596,6 +2596,12 @@ function resetMealModal() {
   const tplBtn = document.getElementById('breakfastTemplateBtn');
   if (adjPanel) adjPanel.style.display = 'none';
   if (tplBtn) tplBtn.style.display = 'flex';
+  // テンプレボタンの disabled 状態をリセット
+  document.querySelectorAll('.meal-template-btn').forEach(b => {
+    b.disabled = false;
+    b.style.opacity = '1';
+  });
+  isSavingMealTemplate = false;
   // 保存ボタンもリセット
   const btn = document.querySelector('#mealStep2 .btn-primary');
   if (btn) { btn.disabled = false; btn.textContent = '保存'; }
