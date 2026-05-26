@@ -3602,7 +3602,7 @@ function buildMachineStats() {
           type: entry.type,
           daysUsed: 0, maxWeight: 0, maxReps: 0, bestSet: null,
           prCount: 0, firstDate: date, lastDate: date, memos: [],
-          maxTime: 0, maxDist: 0, maxFloors: 0, maxCardioKcal: 0,
+          maxTime: 0, maxDist: 0, maxFloors: 0, maxCardioKcal: 0, maxLevel: 0,
         };
       }
       const s = stats[name];
@@ -3612,8 +3612,10 @@ function buildMachineStats() {
       if (entry.type === 'cardio') {
         if (entry.time       && Number(entry.time)       > s.maxTime)       s.maxTime       = Number(entry.time);
         if (entry.dist       && Number(entry.dist)       > s.maxDist)       s.maxDist       = Number(entry.dist);
-        if (entry.floors     && Number(entry.floors)     > s.maxFloors)     s.maxFloors     = Number(entry.floors);
+        if (entry.level      && Number(entry.level)      > s.maxLevel)      s.maxLevel      = Number(entry.level);
         if (entry.cardioKcal && Number(entry.cardioKcal) > s.maxCardioKcal) s.maxCardioKcal = Number(entry.cardioKcal);
+        // フロア数はクライムミル専用
+        if (entry.name === 'クライムミル' && entry.floors && Number(entry.floors) > s.maxFloors) s.maxFloors = Number(entry.floors);
       } else {
         (entry.sets || []).forEach(set => {
           if (set.weight > s.maxWeight) s.maxWeight = set.weight;
@@ -3839,26 +3841,36 @@ function openPokedexModal(machineName) {
             <div class="pokedex-stat-val">${s.daysUsed}</div>
             <div class="pokedex-stat-label">挑戦日数</div>
           </div>
-          ${s.type === 'cardio' ? `
+          ${s.type === 'cardio' ? (() => {
+            // CARDIO_METAのfields定義から表示項目を動的生成
+            const meta = CARDIO_META[machineName] || CARDIO_META['_default'];
+            const statMap = {
+              time:       { val: s.maxTime,       label: '最長時間(分)' },
+              dist:       { val: s.maxDist,       label: '最長距離(km)' },
+              level:      { val: s.maxLevel || 0, label: '最高レベル' },
+              floors:     { val: s.maxFloors,     label: '最多フロア' },
+              cardioKcal: { val: s.maxCardioKcal, label: '最大消費kcal' },
+            };
+            // timeは必ず先頭、あとはCARDIO_METAのfields順で表示（time以外）
+            const displayFields = ['time', ...meta.map(f => f.key).filter(k => k !== 'time')];
+            return displayFields.map(key => {
+              const stat = statMap[key];
+              if (!stat || !stat.val) return '';
+              return `<div class="pokedex-stat-item">
+                <div class="pokedex-stat-val">${stat.val}</div>
+                <div class="pokedex-stat-label">${stat.label}</div>
+              </div>`;
+            }).join('');
+          })() : `
           <div class="pokedex-stat-item">
-            <div class="pokedex-stat-val">${s.maxTime || '-'}</div>
-            <div class="pokedex-stat-label">最長時間(分)</div>
+            <div class="pokedex-stat-val">${s.prCount}</div>
+            <div class="pokedex-stat-label">PR回数</div>
           </div>
-          ${s.maxFloors ? `
           <div class="pokedex-stat-item">
-            <div class="pokedex-stat-val">${s.maxFloors}</div>
-            <div class="pokedex-stat-label">最多フロア</div>
-          </div>` : `
-          <div class="pokedex-stat-item">
-            <div class="pokedex-stat-val">${s.maxDist || '-'}</div>
-            <div class="pokedex-stat-label">最長距離(km)</div>
-          </div>`}
-          ${s.maxCardioKcal ? `
-          <div class="pokedex-stat-item">
-            <div class="pokedex-stat-val">${s.maxCardioKcal}</div>
-            <div class="pokedex-stat-label">最大消費kcal</div>
-          </div>` : ''}
-          ` : `
+            <div class="pokedex-stat-val">${s.maxWeight}</div>
+            <div class="pokedex-stat-label">最高重量kg</div>
+          </div>
+          `} : `
           <div class="pokedex-stat-item">
             <div class="pokedex-stat-val">${s.prCount}</div>
             <div class="pokedex-stat-label">PR回数</div>
