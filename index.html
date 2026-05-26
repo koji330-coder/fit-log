@@ -3760,7 +3760,7 @@ function renderComplete() {
             <div class="pokedex-rank-icon">${rank.icon}</div>
             <div>
               <div class="pokedex-card-name">${e.name}</div>
-              <div class="pokedex-card-part">${rank.label}${e.daysUsed > 0 ? ' · ' + e.daysUsed + '日' : ''}</div>
+              <div class="pokedex-card-part">${e.aiNickname ? `<span style="color:var(--accent);font-weight:700">${e.aiNickname}</span>` : `${rank.label}${e.daysUsed > 0 ? ' · ' + e.daysUsed + '日' : ''}`}</div>
             </div>
           </div>
           ${rank.next ? nextInfo : `<div class="pokedex-card-right" style="color:var(--text-dim)">💎 MAX</div>`}
