@@ -3801,8 +3801,9 @@ function renderComplete() {
 function openPokedexModal(machineName) {
   const stats = buildMachineStats();
   const s = stats[machineName];
-  const rank = getRank(s ? s.daysUsed : 0);
+  const master = (state.machineMaster || []).find(m => m.machineName === machineName) || {};
   const pokedex = state.pokedexEntries[machineName] || {};
+  const rank = getRank(s ? s.daysUsed : 0);
   const aiNickname = pokedex.aiNickname || master.aiNickname || '';
 
   const modal = document.createElement('div');
@@ -3822,8 +3823,6 @@ function openPokedexModal(machineName) {
          </div>`).join('')}
        </div>`
     : `<div style="font-size:12px;color:var(--text-dim)">まだメモがありません。種目を記録するときにメモを残してみましょう。</div>`;
-
-  const master = state.machineMaster.find(m => m.machineName === machineName) || {};
 
   const fullText = master.aiFlavorText || master.defaultFlavor || pokedex.flavorText || '';
   const textLines = fullText.split('\n').filter(Boolean);
