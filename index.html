@@ -3632,6 +3632,8 @@ function buildMachineStats() {
         };
       }
       const s = stats[name];
+      const unlocked = isMachineUnlocked(s);
+      
       s.daysUsed++;
       if (date > s.lastDate) s.lastDate = date;
       if (date < s.firstDate) s.firstDate = date;
@@ -3774,96 +3776,75 @@ function renderComplete() {
   });
   html += `</div>`;
 
-  // 部位別グループ表示
-  Object.entries(groups).forEach(([groupName, exercises]) => {
-    html += `<div class="pokedex-group-title">${groupName}</div>`;
-    exercises.forEach(e => {
-      const rank = getRank(e.daysUsed);
-      const nextInfo = rank.next ? `<div class="pokedex-card-right">あと${rank.next - e.daysUsed}回で${getRank(rank.next).icon}</div>` : `<div class="pokedex-card-right" style="color:var(--text-dim)">MAX</div>`;
-      html += `
-        <div class="pokedex-card" onclick="openPokedexModal('${e.name}')">
-          <div class="pokedex-card-left">
-            <div class="pokedex-rank-icon">${rank.icon}</div>
-            <div>
-              <div class="pokedex-card-name">${e.name}</div>
-              <div class="pokedex-card-part">${e.aiNickname ? `<span style="color:var(--accent);font-weight:700">${e.aiNickname}</span>` : `${rank.label}${e.daysUsed > 0 ? ' · ' + e.daysUsed + '日' : ''}`}</div>
-            </div>
+// 部位別グループ表示
+Object.entries(groups).forEach(([groupName, exercises]) => {
+  html += `<div class="pokedex-group-title">${groupName}</div>`;
+
+  exercises.forEach(e => {
+    const daysUsed = Number(e.daysUsed) || 0;
+    const unlocked = daysUsed > 0;
+    const rank = getRank(daysUsed);
+
+    // 未経験なら右側は「初挑戦で🔓」
+    // 経験済みなら「あと◯回」または「💎 MAX」
+    const rightInfo = !unlocked
+      ? `<div class="pokedex-card-right" style="color:var(--text-dim);font-size:12px;font-weight:900">初挑戦で🔓</div>`
+      : (rank.next
+          ? `<div class="pokedex-card-right">あと${rank.next - daysUsed}回で${getRank(rank.next).icon}</div>`
+          : `<div class="pokedex-card-right" style="color:var(--text-dim)">💎 MAX</div>`
+        );
+
+    // 未経験なら二つ名は隠す
+    // 経験済みなら二つ名、なければランク表示
+    const subText = unlocked
+      ? (e.aiNickname || `${rank.label}${daysUsed > 0 ? ' · ' + daysUsed + '日' : ''}`)
+      : '🔒 二つ名未解放';
+
+    const subStyle = unlocked && e.aiNickname
+      ? 'color:var(--accent);font-weight:700'
+      : '';
+
+    html += `
+      <div class="pokedex-card" onclick="openPokedexModal('${String(e.name).replace(/'/g, "\\'")}')">
+        <div class="pokedex-card-left">
+          <div class="pokedex-rank-icon">${unlocked ? rank.icon : '⬜'}</div>
+          <div>
+            <div class="pokedex-card-name">${e.name}</div>
+            <div class="pokedex-card-part" style="${subStyle}">${subText}</div>
           </div>
-          ${rank.next ? nextInfo : `<div class="pokedex-card-right" style="color:var(--text-dim)">💎 MAX</div>`}
         </div>
-      `;
-    });
+        ${rightInfo}
+      </div>
+    `;
   });
+});
 
   container.innerHTML = html;
 }
 
+function isMachineUnlocked(s) {
+  return !!(s && Number(s.daysUsed) > 0);
+}
+
+function escapeHtml(str) {
+  return String(str || '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[ch]));
+}
+  
 function openPokedexModal(machineName) {
   const stats = buildMachineStats();
   const s = stats[machineName];
+
+  const unlocked = isMachineUnlocked(s);
+
   const master = (state.machineMaster || []).find(m => m.machineName === machineName) || {};
   const pokedex = state.pokedexEntries[machineName] || {};
-  const rank = getRank(s ? s.daysUsed : 0);
-  const aiNickname = pokedex.aiNickname || master.aiNickname || '';
 
-  const modal = document.createElement('div');
-  modal.className = 'pokedex-modal-overlay';
-  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
-
-  const nextRankInfo = rank.next
-    ? `<div class="pokedex-nextrank">あと${rank.next - (s?.daysUsed||0)}回で${getRank(rank.next).icon} ${getRank(rank.next).label}</div>`
-    : '';
-
-  const memoHtml = s?.memos?.length > 0
-    ? `<div style="font-size:11px;font-weight:900;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">📝 あなたのメモ</div>
-       <div class="pokedex-memos">${s.memos.slice().reverse().map(m => `
-         <div class="pokedex-memo-item">
-           <div class="pokedex-memo-date">${formatDate(m.date)}</div>
-           <div>${m.text}</div>
-         </div>`).join('')}
-       </div>`
-    : `<div style="font-size:12px;color:var(--text-dim)">まだメモがありません。種目を記録するときにメモを残してみましょう。</div>`;
-
-  const fullText = master.aiFlavorText || master.defaultFlavor || pokedex.flavorText || '';
-  const textLines = fullText.split('\n').filter(Boolean);
-  const nickname = master.aiNickname || '';
-  const battleLog = textLines.length > 1 ? textLines.slice(1).join('\n') : (textLines[0] || '');
-  const isAiGenerated = !!master.aiFlavorText;
-
-  const nicknameHtml = aiNickname ? `
-  <div style="
-    margin: 16px auto 18px;
-    padding: 14px 16px;
-    width: 100%;
-    max-width: 420px;
-    border-radius: 16px;
-    background:
-      radial-gradient(circle at top left, rgba(255,209,102,0.18), transparent 48%),
-      linear-gradient(135deg, rgba(255,61,107,0.18), rgba(255,140,66,0.12));
-    border: 1.5px solid rgba(255,61,107,0.38);
-    box-shadow: 0 10px 28px rgba(255,61,107,0.12);
-    text-align: center;
-  ">
-    <div style="
-      display: inline-block;
-      margin-bottom: 8px;
-      padding: 3px 12px;
-      border-radius: 999px;
-      background: rgba(255,61,107,0.2);
-      color: var(--accent);
-      font-size: 10px;
-      font-weight: 900;
-      letter-spacing: 0.18em;
-    ">二つ名</div>
-    <div style="
-      color: var(--text);
-      font-size: 18px;
-      font-weight: 900;
-      line-height: 1.55;
-      letter-spacing: 0.03em;
-    ">“${aiNickname}”</div>
-  </div>
-` : '';
 
   const flavorHtml = battleLog ? `<div class="pokedex-flavor">
     📖 ${battleLog.replace(/\n/g,'<br>')}
