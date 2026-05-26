@@ -4889,7 +4889,14 @@ function soundSave() {
 // =============================================
 // START
 // =============================================
-init();
+window.addEventListener('DOMContentLoaded', () => {
+  init().catch(err => {
+    console.error('init failed:', err);
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.classList.add('hidden');
+    alert('初期化エラー: ' + err.message);
+  });
+});
 </script>
 </body>
 </html>
