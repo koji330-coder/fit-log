@@ -810,9 +810,9 @@
           <button class="meal-template-btn" id="breakfastTemplateBtn" onclick="openBreakfastAdjust()">
             <div>
               <div class="meal-template-name">🌅 いつもの朝食</div>
-              <div class="meal-template-pfc">P35 / F12 / C75</div>
+              <div class="meal-template-pfc">P41 / F17 / C75</div>
             </div>
-            <div class="meal-template-kcal">580 kcal</div>
+            <div class="meal-template-kcal">656 kcal</div>
           </button>
           <!-- 朝食 差分チップパネル -->
           <div class="meal-adjust-panel" id="breakfastAdjustPanel" style="display:none">
@@ -835,8 +835,8 @@
             </div>
             <div class="meal-adjust-preview">
               <div>
-                <div class="meal-adjust-preview-kcal" id="adjustKcalDisplay">580 kcal</div>
-                <div class="meal-adjust-preview-pfc" id="adjustPfcDisplay">P35 / F12 / C75</div>
+                <div class="meal-adjust-preview-kcal" id="adjustKcalDisplay">656 kcal</div>
+                <div class="meal-adjust-preview-pfc" id="adjustPfcDisplay">P41 / F17 / C75</div>
               </div>
             </div>
             <div class="meal-adjust-label" style="margin-bottom:6px">メモ（任意）</div>
@@ -1193,20 +1193,7 @@
         <span class="part-tag" id="loggerPartTag"></span>
       </div>
       <div id="cardioInputs" style="display:none">
-        <div class="cardio-inputs">
-          <div class="input-group">
-            <div class="input-label">時間(分)</div>
-            <input class="input-field" type="number" id="cardioTime" placeholder="30" inputmode="numeric">
-          </div>
-          <div class="input-group">
-            <div class="input-label">距離(km)</div>
-            <input class="input-field" type="number" id="cardioDist" placeholder="5.0" inputmode="decimal" step="0.1">
-          </div>
-          <div class="input-group">
-            <div class="input-label">レベル</div>
-            <input class="input-field" type="number" id="cardioLevel" placeholder="8" inputmode="numeric">
-          </div>
-        </div>
+        <div id="cardioFieldsContainer" class="cardio-inputs"></div>
       </div>
       <div id="strengthInputs">
         <div class="input-row">
@@ -1280,6 +1267,77 @@
 // CONFIG
 // =============================================
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzczrBj42H-aTrjXrnNPm6Rgm7DzkHOYLNOR5L8XwqSc1KWc4GNIEQ7CLP_kESKKos/exec';
+
+// =============================================
+// 有酸素種目別フィールド定義
+// =============================================
+const CARDIO_META = {
+  'クライムミル': [
+    { key: 'time',       label: '時間(分)',   inputmode: 'numeric', placeholder: '30',  step: '1'   },
+    { key: 'floors',     label: 'フロア数',   inputmode: 'numeric', placeholder: '111', step: '1'   },
+    { key: 'level',      label: 'レベル',     inputmode: 'numeric', placeholder: '30',  step: '1'   },
+    { key: 'cardioKcal', label: '消費kcal',   inputmode: 'numeric', placeholder: '532', step: '1'   },
+  ],
+  'ランニングマシン': [
+    { key: 'time',       label: '時間(分)',   inputmode: 'numeric', placeholder: '30',  step: '1'   },
+    { key: 'dist',       label: '距離(km)',   inputmode: 'decimal', placeholder: '3.0', step: '0.1' },
+    { key: 'level',      label: 'レベル',     inputmode: 'numeric', placeholder: '8',   step: '1'   },
+    { key: 'cardioKcal', label: '消費kcal',   inputmode: 'numeric', placeholder: '200', step: '1'   },
+  ],
+  'クロストレーナー': [
+    { key: 'time',       label: '時間(分)',   inputmode: 'numeric', placeholder: '30',  step: '1'   },
+    { key: 'dist',       label: '距離(km)',   inputmode: 'decimal', placeholder: '3.0', step: '0.1' },
+    { key: 'level',      label: 'レベル',     inputmode: 'numeric', placeholder: '8',   step: '1'   },
+    { key: 'cardioKcal', label: '消費kcal',   inputmode: 'numeric', placeholder: '200', step: '1'   },
+  ],
+  'アップライトバイク': [
+    { key: 'time',       label: '時間(分)',   inputmode: 'numeric', placeholder: '20',  step: '1'   },
+    { key: 'dist',       label: '距離(km)',   inputmode: 'decimal', placeholder: '5.0', step: '0.1' },
+    { key: 'level',      label: 'レベル',     inputmode: 'numeric', placeholder: '5',   step: '1'   },
+    { key: 'cardioKcal', label: '消費kcal',   inputmode: 'numeric', placeholder: '150', step: '1'   },
+  ],
+  'リカンベントバイク': [
+    { key: 'time',       label: '時間(分)',   inputmode: 'numeric', placeholder: '20',  step: '1'   },
+    { key: 'dist',       label: '距離(km)',   inputmode: 'decimal', placeholder: '5.0', step: '0.1' },
+    { key: 'level',      label: 'レベル',     inputmode: 'numeric', placeholder: '5',   step: '1'   },
+    { key: 'cardioKcal', label: '消費kcal',   inputmode: 'numeric', placeholder: '150', step: '1'   },
+  ],
+  // デフォルト（上記以外の有酸素）
+  '_default': [
+    { key: 'time',       label: '時間(分)',   inputmode: 'numeric', placeholder: '30',  step: '1'   },
+    { key: 'dist',       label: '距離(km)',   inputmode: 'decimal', placeholder: '3.0', step: '0.1' },
+    { key: 'level',      label: 'レベル',     inputmode: 'numeric', placeholder: '8',   step: '1'   },
+    { key: 'cardioKcal', label: '消費kcal',   inputmode: 'numeric', placeholder: '200', step: '1'   },
+  ],
+};
+
+function renderCardioFields(exerciseName) {
+  const fields = CARDIO_META[exerciseName] || CARDIO_META['_default'];
+  const container = document.getElementById('cardioFieldsContainer');
+  if (!container) return;
+  // グリッド列数を項目数に合わせる
+  container.style.gridTemplateColumns = `repeat(${fields.length}, 1fr)`;
+  container.innerHTML = fields.map(f => `
+    <div class="input-group">
+      <div class="input-label">${f.label}</div>
+      <input class="input-field" type="number"
+        id="cardio_${f.key}"
+        inputmode="${f.inputmode}"
+        placeholder="${f.placeholder}"
+        step="${f.step}">
+    </div>
+  `).join('');
+}
+
+function getCardioValues(exerciseName) {
+  const fields = CARDIO_META[exerciseName] || CARDIO_META['_default'];
+  const values = {};
+  fields.forEach(f => {
+    const el = document.getElementById(`cardio_${f.key}`);
+    values[f.key] = el ? el.value : '';
+  });
+  return values;
+}
 
 // =============================================
 // MACHINES DATA
@@ -1591,6 +1649,15 @@ function selectExercise(ex, type) {
   document.getElementById('strengthInputs').style.display = isCardio ? 'none' : 'block';
   document.getElementById('addSetBtn').style.display = isCardio ? 'none' : 'inline-block';
 
+  if (isCardio) {
+    renderCardioFields(ex.name);
+    // 前回の有酸素記録をヒントに表示
+    const hint = document.getElementById('prevRecordHint');
+    const prev = getPrevCardioRecord(ex.name);
+    if (prev) { hint.style.display = 'block'; hint.textContent = `📊 前回: ${prev}`; }
+    else { hint.style.display = 'none'; }
+  }
+
   if (!isCardio) {
     // 重量・回数を毎回リセットしてから初期値をセット
     const weightInput = document.getElementById('inputWeight');
@@ -1667,16 +1734,25 @@ async function saveExercise() {
   let entry;
 
   if (isCardio) {
-    const time = document.getElementById('cardioTime').value;
-    const dist = document.getElementById('cardioDist').value;
-    const level = document.getElementById('cardioLevel').value;
-    if (!time && !dist) {
-      showToast('時間か距離を入力してください');
+    const cv = getCardioValues(state.selectedExercise.name);
+    if (!cv.time && !cv.dist && !cv.floors) {
+      showToast('時間・距離・フロア数のいずれかを入力してください');
       isSavingExercise = false;
       if (btn) { btn.disabled = false; btn.textContent = 'この種目を保存'; }
       return;
     }
-    entry = { date: state.recordingDate, name: state.selectedExercise.name, area: MACHINES[state.selectedArea].name, type: 'cardio', time: time||null, dist: dist||null, level: level||null, memo };
+    entry = {
+      date: state.recordingDate,
+      name: state.selectedExercise.name,
+      area: MACHINES[state.selectedArea].name,
+      type: 'cardio',
+      time:       cv.time       || null,
+      dist:       cv.dist       || null,
+      level:      cv.level      || null,
+      floors:     cv.floors     || null,
+      cardioKcal: cv.cardioKcal || null,
+      memo,
+    };
   } else {
     if (state.currentSets.length === 0) {
       showToast('セットを追加してください');
@@ -2320,8 +2396,8 @@ function getCurrentTimeStr() {
 const MEAL_TEMPLATES = {
   breakfast: {
     name: 'いつもの朝食', mealType: '朝食',
-    foodName: 'カリフラワーライス・オクラ・大豆・白米・蒸し鶏・ひじき・味噌汁',
-    kcal: 580, protein: 35, fat: 12, carb: 75,
+    foodName: 'カリフラワーライス・オクラ・大豆・白米・蒸し鶏・ひじき・温泉卵・味噌汁',
+    kcal: 656, protein: 41, fat: 17, carb: 75,
   },
   lunch: {
     name: 'いつもの昼食', mealType: '昼食',
@@ -2330,10 +2406,12 @@ const MEAL_TEMPLATES = {
   },
 };
 
+// 白米差分（150gをベースとした差分）
+// 精白米・炊飯: 168kcal / P2.5 / F0.3 / C37.1 per 100g
 const RICE_DIFF = {
-  150: { kcal: 0,    protein: 0, fat: 0, carb: 0  },
-  100: { kcal: -35,  protein: 0, fat: 0, carb: -8 },
-  0:   { kcal: -168, protein: 0, fat: 0, carb: -38 },
+  150: { kcal: 0,    protein: 0,    fat: 0,    carb: 0    },
+  100: { kcal: -84,  protein: -1,   fat: 0,    carb: -18  },
+  0:   { kcal: -252, protein: -4,   fat: -1,   carb: -56  },
 };
 const MISO_DIFF = {
   1: { kcal: 0,   protein: 0,  fat: 0, carb: 0  },
@@ -3438,14 +3516,22 @@ function jumpToRecord(itemJson) {
   document.getElementById('addSetBtn').style.display = isCardio ? 'none' : 'inline-block';
   document.getElementById('inputMemo').value = '';
 
-  // 重量・回数をリセットしてから初期値をセット
-  if (!isCardio) {
+  if (isCardio) {
+    renderCardioFields(item.name);
+    if (item.time) {
+      const el = document.getElementById('cardio_time');
+      if (el) el.placeholder = `目標 ${item.time}分`;
+    }
+    // 有酸素の前回記録ヒント
+    const hint = document.getElementById('prevRecordHint');
+    const prev = getPrevCardioRecord(item.name);
+    if (prev) { hint.style.display = 'block'; hint.textContent = `📊 前回: ${prev}`; }
+    else { hint.style.display = 'none'; }
+  } else {
     const weightInput = document.getElementById('inputWeight');
     const repsInput = document.getElementById('inputReps');
     weightInput.value = '';
     repsInput.value = '';
-
-    // メニューの目標値を優先、なければ前回記録
     if (item.weight) {
       weightInput.value = item.weight;
       weightInput.placeholder = `目標 ${item.weight}kg`;
@@ -3459,18 +3545,11 @@ function jumpToRecord(itemJson) {
       }
     }
     if (item.reps) repsInput.placeholder = `目標 ${item.reps}回`;
-  } else {
-    if (item.time) document.getElementById('cardioTime').placeholder = `目標 ${item.time}分`;
-  }
-
-  // 前回記録ヒント
-  const hint = document.getElementById('prevRecordHint');
-  if (!isCardio) {
+    // 筋トレの前回記録ヒント
+    const hint = document.getElementById('prevRecordHint');
     const prev = getPrevRecord(item.name);
     if (prev) { hint.style.display = 'block'; hint.textContent = `📊 前回: ${prev}`; }
     else { hint.style.display = 'none'; }
-  } else {
-    hint.style.display = 'none';
   }
 
   renderSets();
@@ -3511,27 +3590,35 @@ function buildMachineStats() {
   const stats = {};
   Object.entries(state.history).forEach(([date, entries]) => {
     entries.forEach(entry => {
-      if (entry.type !== 'strength') return;
       const name = entry.name;
       if (!stats[name]) {
         stats[name] = {
           name, area: entry.area, part: entry.part || '',
+          type: entry.type,
           daysUsed: 0, maxWeight: 0, maxReps: 0, bestSet: null,
-          prCount: 0, firstDate: date, lastDate: date, memos: []
+          prCount: 0, firstDate: date, lastDate: date, memos: [],
+          maxTime: 0, maxDist: 0, maxFloors: 0, maxCardioKcal: 0,
         };
       }
       const s = stats[name];
       s.daysUsed++;
       if (date > s.lastDate) s.lastDate = date;
       if (date < s.firstDate) s.firstDate = date;
-      (entry.sets || []).forEach(set => {
-        if (set.weight > s.maxWeight) s.maxWeight = set.weight;
-        if (set.reps > s.maxReps) s.maxReps = set.reps;
-        if (!s.bestSet || set.weight * set.reps > s.bestSet.weight * s.bestSet.reps) {
-          s.bestSet = { weight: set.weight, reps: set.reps };
-        }
-        if (set.isPR) s.prCount++;
-      });
+      if (entry.type === 'cardio') {
+        if (entry.time       && Number(entry.time)       > s.maxTime)       s.maxTime       = Number(entry.time);
+        if (entry.dist       && Number(entry.dist)       > s.maxDist)       s.maxDist       = Number(entry.dist);
+        if (entry.floors     && Number(entry.floors)     > s.maxFloors)     s.maxFloors     = Number(entry.floors);
+        if (entry.cardioKcal && Number(entry.cardioKcal) > s.maxCardioKcal) s.maxCardioKcal = Number(entry.cardioKcal);
+      } else {
+        (entry.sets || []).forEach(set => {
+          if (set.weight > s.maxWeight) s.maxWeight = set.weight;
+          if (set.reps > s.maxReps) s.maxReps = set.reps;
+          if (!s.bestSet || set.weight * set.reps > s.bestSet.weight * s.bestSet.reps) {
+            s.bestSet = { weight: set.weight, reps: set.reps };
+          }
+          if (set.isPR) s.prCount++;
+        });
+      }
       if (entry.memo) s.memos.push({ date, text: entry.memo });
     });
   });
@@ -3747,6 +3834,26 @@ function openPokedexModal(machineName) {
             <div class="pokedex-stat-val">${s.daysUsed}</div>
             <div class="pokedex-stat-label">挑戦日数</div>
           </div>
+          ${s.type === 'cardio' ? `
+          <div class="pokedex-stat-item">
+            <div class="pokedex-stat-val">${s.maxTime || '-'}</div>
+            <div class="pokedex-stat-label">最長時間(分)</div>
+          </div>
+          ${s.maxFloors ? `
+          <div class="pokedex-stat-item">
+            <div class="pokedex-stat-val">${s.maxFloors}</div>
+            <div class="pokedex-stat-label">最多フロア</div>
+          </div>` : `
+          <div class="pokedex-stat-item">
+            <div class="pokedex-stat-val">${s.maxDist || '-'}</div>
+            <div class="pokedex-stat-label">最長距離(km)</div>
+          </div>`}
+          ${s.maxCardioKcal ? `
+          <div class="pokedex-stat-item">
+            <div class="pokedex-stat-val">${s.maxCardioKcal}</div>
+            <div class="pokedex-stat-label">最大消費kcal</div>
+          </div>` : ''}
+          ` : `
           <div class="pokedex-stat-item">
             <div class="pokedex-stat-val">${s.prCount}</div>
             <div class="pokedex-stat-label">PR回数</div>
@@ -3755,6 +3862,7 @@ function openPokedexModal(machineName) {
             <div class="pokedex-stat-val">${s.maxWeight}</div>
             <div class="pokedex-stat-label">最高重量kg</div>
           </div>
+          `}
         </div>
         <div style="display:flex;gap:8px;margin-bottom:14px;font-size:12px;color:var(--text-dim)">
           <span>初挑戦：${formatDate(s.firstDate)}</span>
@@ -3848,6 +3956,22 @@ function getInitialWeight(exName) {
     }
   }
   // ③ どちらもない
+  return null;
+}
+
+function getPrevCardioRecord(exName) {
+  const dates = Object.keys(state.history).filter(d => d !== state.recordingDate).sort((a,b) => b.localeCompare(a));
+  for (const date of dates) {
+    for (const entry of state.history[date]) {
+      if (entry.name === exName && entry.type === 'cardio') {
+        const fields = CARDIO_META[exName] || CARDIO_META['_default'];
+        const parts = fields
+          .map(f => entry[f.key] ? `${f.label}:${entry[f.key]}` : null)
+          .filter(Boolean);
+        return parts.length ? `${parts.join(' / ')} (${formatDate(date)})` : null;
+      }
+    }
+  }
   return null;
 }
 
