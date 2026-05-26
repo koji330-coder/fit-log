@@ -4,16 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>FIT LOG</title>
-<!-- FIT LOG icons / PWA -->
-<link rel="icon" href="./favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
-<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
-<link rel="manifest" href="./site.webmanifest">
-<meta name="theme-color" content="#111111">
-<meta name="apple-mobile-web-app-title" content="FIT LOG">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -503,6 +493,86 @@
   }
   .meal-select:focus { outline: none; border-color: var(--accent); }
 
+  /* MEAL TEMPLATES */
+  .meal-template-section { margin-bottom: 16px; }
+  .meal-template-label {
+    font-size: 10px; font-weight: 700; color: var(--text-dim);
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;
+  }
+  .meal-template-btn {
+    width: 100%; background: var(--surface2);
+    border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px;
+    color: var(--text); font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px; transition: border-color 0.2s, background 0.2s; text-align: left;
+  }
+  .meal-template-btn:hover { border-color: var(--accent); background: rgba(255,61,107,0.06); }
+  .meal-template-btn:active { background: rgba(255,61,107,0.12); }
+  .meal-template-name { font-size: 13px; font-weight: 700; }
+  .meal-template-pfc { font-size: 11px; color: var(--text-dim); margin-top: 2px; font-weight: 500; }
+  .meal-template-kcal {
+    font-family: 'Bebas Neue', sans-serif; font-size: 20px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    white-space: nowrap; margin-left: 8px;
+  }
+  .meal-template-divider {
+    display: flex; align-items: center; gap: 8px;
+    margin: 14px 0; color: var(--text-dim); font-size: 11px; font-weight: 700;
+  }
+  .meal-template-divider::before, .meal-template-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+  /* MEAL ADJUST CHIPS */
+  .meal-adjust-panel {
+    background: var(--bg); border: 1.5px solid var(--accent);
+    border-radius: 12px; padding: 14px; margin-bottom: 12px;
+    animation: fadeInUp 0.18s ease;
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .meal-adjust-back {
+    background: none; border: none; color: var(--text-dim);
+    font-size: 12px; font-weight: 700; cursor: pointer; padding: 0;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 4px;
+  }
+  .meal-adjust-back:hover { color: var(--text); }
+  .meal-adjust-title { font-size: 13px; font-weight: 900; margin-bottom: 12px; }
+  .meal-adjust-row { margin-bottom: 12px; }
+  .meal-adjust-label { font-size: 10px; font-weight: 700; color: var(--text-dim); letter-spacing: 1px; margin-bottom: 6px; }
+  .meal-chip-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .meal-chip {
+    padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border);
+    background: var(--surface2); color: var(--text-dim);
+    font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .meal-chip.selected {
+    border-color: var(--accent); background: rgba(255,61,107,0.12); color: var(--text);
+  }
+  .meal-adjust-preview {
+    background: var(--surface2); border-radius: 8px; padding: 10px 12px; margin: 12px 0 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .meal-adjust-preview-kcal {
+    font-family: 'Bebas Neue', sans-serif; font-size: 22px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .meal-adjust-preview-pfc { font-size: 11px; color: var(--text-dim); font-weight: 500; }
+  .meal-memo-field {
+    width: 100%; background: var(--bg); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif; font-size: 13px;
+    resize: none; height: 60px; margin-bottom: 12px;
+  }
+  .meal-memo-field:focus { outline: none; border-color: var(--accent); }
+  .meal-memo-field::placeholder { color: var(--text-dim); }
+
+
   /* POKEDEX */
   .pokedex-filter-row { display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:10px; scrollbar-width:none; }
   .pokedex-filter-row::-webkit-scrollbar { display:none; }
@@ -732,8 +802,56 @@
   <div class="meal-modal-box">
     <div class="meal-modal-title">🍽️ 食事を記録</div>
     <div id="mealModalContent">
-      <!-- Step1: 画像選択 -->
+      <!-- Step1: テンプレ or 画像選択 -->
       <div id="mealStep1">
+        <!-- テンプレボタン群 -->
+        <div class="meal-template-section" id="mealTemplateSection">
+          <div class="meal-template-label">⚡ よく使う食事</div>
+          <button class="meal-template-btn" id="breakfastTemplateBtn" onclick="openBreakfastAdjust()">
+            <div>
+              <div class="meal-template-name">🌅 いつもの朝食</div>
+              <div class="meal-template-pfc">P35 / F12 / C75</div>
+            </div>
+            <div class="meal-template-kcal">580 kcal</div>
+          </button>
+          <!-- 朝食 差分チップパネル -->
+          <div class="meal-adjust-panel" id="breakfastAdjustPanel" style="display:none">
+            <button class="meal-adjust-back" onclick="closeBreakfastAdjust()">← 戻る</button>
+            <div class="meal-adjust-title">🌅 いつもの朝食 — 少し変更</div>
+            <div class="meal-adjust-row">
+              <div class="meal-adjust-label">白米</div>
+              <div class="meal-chip-group" id="riceChips">
+                <button class="meal-chip" data-rice="150" onclick="selectChip('riceChips', this)">150g（通常）</button>
+                <button class="meal-chip" data-rice="100" onclick="selectChip('riceChips', this)">100g</button>
+                <button class="meal-chip" data-rice="0"   onclick="selectChip('riceChips', this)">なし</button>
+              </div>
+            </div>
+            <div class="meal-adjust-row">
+              <div class="meal-adjust-label">味噌汁</div>
+              <div class="meal-chip-group" id="misoChips">
+                <button class="meal-chip" data-miso="1" onclick="selectChip('misoChips', this)">あり（通常）</button>
+                <button class="meal-chip" data-miso="0" onclick="selectChip('misoChips', this)">なし</button>
+              </div>
+            </div>
+            <div class="meal-adjust-preview">
+              <div>
+                <div class="meal-adjust-preview-kcal" id="adjustKcalDisplay">580 kcal</div>
+                <div class="meal-adjust-preview-pfc" id="adjustPfcDisplay">P35 / F12 / C75</div>
+              </div>
+            </div>
+            <div class="meal-adjust-label" style="margin-bottom:6px">メモ（任意）</div>
+            <textarea class="meal-memo-field" id="breakfastMemo" placeholder="デザートにヨーグルト追加、など"></textarea>
+            <button class="btn btn-primary" style="width:100%" onclick="saveBreakfastTemplate()">この内容で記録</button>
+          </div>
+          <button class="meal-template-btn" onclick="applyMealTemplate('lunch')">
+            <div>
+              <div class="meal-template-name">☀️ いつもの昼食</div>
+              <div class="meal-template-pfc">P55 / F12 / C75 ※仮値</div>
+            </div>
+            <div class="meal-template-kcal">650 kcal</div>
+          </button>
+          <div class="meal-template-divider">または</div>
+        </div>
         <input type="file" id="mealImageInput" accept="image/*" style="display:none" onchange="handleMealImageSelected(event)">
         <div class="btn-row" style="margin-bottom:12px">
           <button class="btn btn-primary btn-sm" onclick="document.getElementById('mealImageInput').click()">📷 写真を選ぶ</button>
@@ -758,7 +876,6 @@
         <img id="mealImgPreview2" class="meal-img-preview" style="display:block">
         <div class="meal-result-grid" id="mealResultGrid"></div>
         <div id="mealAiComment" class="meal-comment" style="margin-bottom:12px"></div>
-        <input type="hidden" id="mealAiCommentHidden" value="">
         <div class="input-group" style="margin-bottom:10px">
           <div class="input-label">食事タイプ</div>
           <select class="meal-select" id="mealTypeSelect">
@@ -1003,6 +1120,23 @@
       <button class="btn btn-primary" onclick="doCalReview()" id="calReviewBtn">🌸 振り返りコメントをもらう</button>
     </div>
     <button class="btn btn-secondary" style="margin-top:12px" onclick="closeCalReviewModal()">閉じる</button>
+  </div>
+</div>
+
+<!-- AI MARKDOWN MODAL -->
+<div class="modal-overlay hidden" id="aiMarkdownModal">
+  <div class="meal-modal-box">
+    <div class="meal-modal-title">📋 AI相談用コピー</div>
+    <div class="input-group" style="margin-bottom:16px">
+      <div class="input-label" style="margin-bottom:6px">AIに聞きたいこと</div>
+      <textarea class="memo-field" id="aiMarkdownQuestion"
+        style="height:120px;font-size:14px"
+        placeholder="例：夜ジム後の補給は必要だったか&#10;レッグプレスで腰に違和感が出た原因を知りたい&#10;このPFCバランスで減量ペースは適切か"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary btn-sm" onclick="closeAiMarkdownModal()">キャンセル</button>
+      <button class="btn btn-primary btn-sm" onclick="executeAiMarkdownCopy()">📋 コピーする</button>
+    </div>
   </div>
 </div>
 
@@ -1279,9 +1413,10 @@ async function init() {
       state.meals = result.meals || {};
       if (result.profile) state.profile = result.profile;
       state.bodyPhotos = result.bodyPhotos || [];
+      state.machineMaster = result.machineMaster || [];
       state.dayLogs = result.dayLogs || {};
       state.bodyMetrics = result.bodyMetrics || {};
-      state.machineMaster = result.machineMaster || [];
+      state.pokedexEntries = result.pokedexEntries || {};
     } else {
       showToast('データ読み込みエラー', true);
     }
@@ -1698,7 +1833,6 @@ function renderToday() {
               <span>C:${m.carb}g</span>
             </div>
             ${m.memo ? `<div style="font-size:11px;color:var(--text-dim);margin-top:4px">📝 ${m.memo}</div>` : ''}
-            ${m.aiComment ? `<div style="font-size:11px;color:var(--accent2);margin-top:4px;line-height:1.5">💬 ${m.aiComment}</div>` : ''}
           </div>
           <button class="meal-delete-btn" onclick="deleteMealRecord('${state.recordingDate}', '${m.time}')">🗑</button>
         </div>
@@ -2075,7 +2209,6 @@ function renderCalendar() {
               </div>
             </div>
             ${m.memo ? `<div class="log-memo" style="margin-top:4px">📝 ${m.memo}</div>` : ''}
-            ${m.aiComment ? `<div style="font-size:11px;color:var(--accent2);margin-top:4px;line-height:1.5">💬 ${m.aiComment}</div>` : ''}
           </div>
         `;
       }
@@ -2135,9 +2268,14 @@ function renderCalendar() {
     }
 
     html += `</div></div>
-      <button class="btn btn-primary" style="margin-top:8px" onclick="openCalReviewModal('${calState.selectedDate}')">
-        🌸 この日を振り返る
-      </button>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-primary" style="flex:1" onclick="openCalReviewModal('${calState.selectedDate}')">
+          🌸 この日を振り返る
+        </button>
+        <button class="btn btn-secondary" style="flex:1" onclick="copyAiMarkdown('${calState.selectedDate}')">
+          📋 AI相談用コピー
+        </button>
+      </div>
     `;
   }
 
@@ -2176,6 +2314,264 @@ function getCurrentTimeStr() {
   return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 }
 
+// =============================================
+// 食事テンプレ定義
+// =============================================
+const MEAL_TEMPLATES = {
+  breakfast: {
+    name: 'いつもの朝食', mealType: '朝食',
+    foodName: 'カリフラワーライス・オクラ・大豆・白米・蒸し鶏・ひじき・味噌汁',
+    kcal: 580, protein: 35, fat: 12, carb: 75,
+  },
+  lunch: {
+    name: 'いつもの昼食', mealType: '昼食',
+    foodName: 'まぐろ丼・サラダチキン・ヨーグルト',
+    kcal: 650, protein: 55, fat: 12, carb: 75,
+  },
+};
+
+const RICE_DIFF = {
+  150: { kcal: 0,    protein: 0, fat: 0, carb: 0  },
+  100: { kcal: -35,  protein: 0, fat: 0, carb: -8 },
+  0:   { kcal: -168, protein: 0, fat: 0, carb: -38 },
+};
+const MISO_DIFF = {
+  1: { kcal: 0,   protein: 0,  fat: 0, carb: 0  },
+  0: { kcal: -30, protein: -1, fat: 0, carb: -3 },
+};
+
+let _chipState = { rice: 150, miso: 1 };
+
+function openBreakfastAdjust() {
+  _chipState = { rice: 150, miso: 1 };
+  ['riceChips', 'misoChips'].forEach(groupId => {
+    const chips = document.querySelectorAll(`#${groupId} .meal-chip`);
+    chips.forEach((c, i) => { if (i === 0) c.classList.add('selected'); else c.classList.remove('selected'); });
+  });
+  document.getElementById('breakfastMemo').value = '';
+  updateAdjustPreview();
+  document.getElementById('breakfastAdjustPanel').style.display = 'block';
+  document.getElementById('breakfastTemplateBtn').style.display = 'none';
+}
+
+function closeBreakfastAdjust() {
+  document.getElementById('breakfastAdjustPanel').style.display = 'none';
+  document.getElementById('breakfastTemplateBtn').style.display = 'flex';
+}
+
+function selectChip(groupId, el) {
+  document.querySelectorAll(`#${groupId} .meal-chip`).forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  if (groupId === 'riceChips') _chipState.rice = Number(el.dataset.rice);
+  if (groupId === 'misoChips') _chipState.miso = Number(el.dataset.miso);
+  updateAdjustPreview();
+}
+
+function updateAdjustPreview() {
+  const base = MEAL_TEMPLATES.breakfast;
+  const rd = RICE_DIFF[_chipState.rice] || RICE_DIFF[150];
+  const md = MISO_DIFF[_chipState.miso] || MISO_DIFF[1];
+  const kcal    = base.kcal    + rd.kcal    + md.kcal;
+  const protein = base.protein + rd.protein + md.protein;
+  const fat     = base.fat     + rd.fat     + md.fat;
+  const carb    = base.carb    + rd.carb    + md.carb;
+  document.getElementById('adjustKcalDisplay').textContent = `${kcal} kcal`;
+  document.getElementById('adjustPfcDisplay').textContent  = `P${protein} / F${fat} / C${carb}`;
+}
+
+function buildBreakfastFoodName() {
+  const parts = ['カリフラワーライス', 'オクラ', '大豆', '蒸し鶏', 'ひじき'];
+  if (_chipState.rice === 150) parts.push('白米150g');
+  else if (_chipState.rice === 100) parts.push('白米100g');
+  if (_chipState.miso === 1) parts.push('味噌汁');
+  return parts.join('・');
+}
+
+let isSavingMealTemplate = false;
+
+async function saveBreakfastTemplate() {
+  if (isSavingMealTemplate) return;
+  isSavingMealTemplate = true;
+  const saveBtn = document.querySelector('#breakfastAdjustPanel .btn-primary');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '保存中...'; }
+  const base = MEAL_TEMPLATES.breakfast;
+  const rd = RICE_DIFF[_chipState.rice] || RICE_DIFF[150];
+  const md = MISO_DIFF[_chipState.miso] || MISO_DIFF[1];
+  const memo = document.getElementById('breakfastMemo').value.trim();
+  const meal = {
+    date: state.recordingDate, time: getCurrentTimeStr(),
+    mealType: base.mealType, foodName: buildBreakfastFoodName(),
+    kcal:    base.kcal    + rd.kcal    + md.kcal,
+    protein: base.protein + rd.protein + md.protein,
+    fat:     base.fat     + rd.fat     + md.fat,
+    carb:    base.carb    + rd.carb    + md.carb,
+    memo,
+  };
+  try {
+    const result = await gasPost({ action: 'saveMeal', meal });
+    if (result.status !== 'ok') throw new Error(result.message || '保存失敗');
+    if (!state.meals[meal.date]) state.meals[meal.date] = [];
+    state.meals[meal.date].push(meal);
+    showToast('🌅 朝食を記録しました！');
+    closeMealModal();
+    renderToday();
+  } catch(e) {
+    showToast('保存失敗', true);
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'この内容で記録'; }
+  } finally {
+    isSavingMealTemplate = false;
+  }
+}
+
+async function applyMealTemplate(templateId) {
+  if (isSavingMealTemplate) return;
+  isSavingMealTemplate = true;
+  const t = MEAL_TEMPLATES[templateId];
+  if (!t) { isSavingMealTemplate = false; return; }
+  const btns = document.querySelectorAll('.meal-template-btn');
+  btns.forEach(b => { b.disabled = true; b.style.opacity = '0.5'; });
+  const meal = {
+    date: state.recordingDate, time: getCurrentTimeStr(),
+    mealType: t.mealType, foodName: t.foodName,
+    kcal: t.kcal, protein: t.protein, fat: t.fat, carb: t.carb, memo: '',
+  };
+  try {
+    const result = await gasPost({ action: 'saveMeal', meal });
+    if (result.status !== 'ok') throw new Error(result.message || '保存失敗');
+    if (!state.meals[meal.date]) state.meals[meal.date] = [];
+    state.meals[meal.date].push(meal);
+    showToast(`🍽️ ${t.name}を記録しました！`);
+    closeMealModal();
+    renderToday();
+  } catch(e) {
+    showToast('保存失敗', true);
+    btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+  } finally {
+    isSavingMealTemplate = false;
+  }
+}
+
+// =============================================
+// AI相談用Markdownコピー
+// =============================================
+let _aiMarkdownDate = null;
+
+function copyAiMarkdown(date) {
+  _aiMarkdownDate = date;
+  document.getElementById('aiMarkdownQuestion').value = '';
+  document.getElementById('aiMarkdownModal').classList.remove('hidden');
+}
+
+function closeAiMarkdownModal() {
+  document.getElementById('aiMarkdownModal').classList.add('hidden');
+  _aiMarkdownDate = null;
+}
+
+function executeAiMarkdownCopy() {
+  const date     = _aiMarkdownDate;
+  const question = document.getElementById('aiMarkdownQuestion').value.trim();
+  if (!date) return;
+
+  const log    = state.history[date]    || [];
+  const meals  = state.meals[date]      || [];
+  const dl     = state.dayLogs[date]    || {};
+  const metric = state.bodyMetrics[date] || {};
+  const p      = state.profile          || {};
+
+  const d        = new Date(date + 'T00:00:00');
+  const dayNames = ['日','月','火','水','木','金','土'];
+  const dateLabel = `${date}（${dayNames[d.getDay()]}）`;
+  const dayType   = dl.isHoliday ? '休日' : '仕事日';
+
+  const lines = [];
+  lines.push('# FIT LOG デイリーレポート');
+  lines.push(`日付：${dateLabel}`);
+  lines.push(`区分：${dayType}`);
+  if (p.goal) lines.push(`目標：${p.goal}`);
+  if (p.target_kcal || p.target_protein) {
+    lines.push(`目標PFC：${p.target_kcal||'-'}kcal / P${p.target_protein||'-'} / F${p.target_fat||'-'} / C${p.target_carb||'-'}`);
+  }
+  if (metric.weight || metric.bodyfat) {
+    lines.push('');
+    lines.push('## 身体組成');
+    if (metric.weight)  lines.push(`体重：${metric.weight}kg`);
+    if (metric.bodyfat) lines.push(`体脂肪率：${metric.bodyfat}%`);
+    if (metric.weight && metric.bodyfat) {
+      lines.push(`除脂肪体重：${(metric.weight * (1 - metric.bodyfat / 100)).toFixed(1)}kg`);
+    }
+  }
+  if (meals.length > 0) {
+    lines.push('');
+    lines.push('## 食事ログ');
+    for (const m of meals) {
+      lines.push(`### ${m.mealType} ${m.time}`);
+      lines.push(`内容：${m.foodName}`);
+      lines.push(`推定：${m.kcal}kcal / P${m.protein}g / F${m.fat}g / C${m.carb}g`);
+      if (m.memo) lines.push(`メモ：${m.memo}`);
+    }
+    const totalKcal = meals.reduce((a, m) => a + (m.kcal    || 0), 0);
+    const totalP    = meals.reduce((a, m) => a + (m.protein || 0), 0);
+    const totalF    = meals.reduce((a, m) => a + (m.fat     || 0), 0);
+    const totalC    = meals.reduce((a, m) => a + (m.carb    || 0), 0);
+    lines.push('');
+    lines.push('### 食事合計');
+    lines.push(`${totalKcal}kcal / P${totalP}g / F${totalF}g / C${totalC}g`);
+    if (p.target_kcal) {
+      const diff = totalKcal - parseInt(p.target_kcal || 0);
+      lines.push(`目標比：${diff >= 0 ? '+' : ''}${diff}kcal`);
+    }
+  }
+  if (log.length > 0) {
+    lines.push('');
+    lines.push('## 運動ログ');
+    for (const entry of log) {
+      lines.push(`### ${entry.name}${entry.area ? `（${entry.area}）` : ''}`);
+      if (entry.type === 'cardio') {
+        const parts = [];
+        if (entry.time)  parts.push(`${entry.time}分`);
+        if (entry.dist)  parts.push(`${entry.dist}km`);
+        if (entry.level) parts.push(`レベル${entry.level}`);
+        if (parts.length) lines.push(parts.join(' / '));
+      } else {
+        if (entry.sets && entry.sets.length > 0) {
+          lines.push(entry.sets.map(s => `${s.weight}kg × ${s.reps}回`).join('、'));
+        }
+      }
+      if (entry.memo) lines.push(`メモ：${entry.memo}`);
+    }
+  }
+  if (dl.memo) {
+    lines.push('');
+    lines.push('## この日のメモ');
+    lines.push(dl.memo);
+  }
+  lines.push('');
+  lines.push('## AIに聞きたいこと');
+  lines.push(question || '（未入力）');
+
+  const markdown = lines.join('\n');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(markdown).then(() => {
+      showToast('📋 AI相談用Markdownをコピーしました！');
+      closeAiMarkdownModal();
+    }).catch(() => { _fallbackCopy(markdown); closeAiMarkdownModal(); });
+  } else {
+    _fallbackCopy(markdown);
+    closeAiMarkdownModal();
+  }
+}
+
+function _fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); showToast('📋 AI相談用Markdownをコピーしました！'); }
+  catch { showToast('コピーに失敗しました', true); }
+  document.body.removeChild(ta);
+}
+
 function openMealModal() {
   resetMealModal();
   document.getElementById('mealModal').classList.remove('hidden');
@@ -2186,8 +2582,7 @@ function closeMealModal() {
 }
 
 function resetMealModal() {
-  isSavingMeal = false;
-  document.getElementById('mealAiCommentHidden').value = '';
+  isSavingMeal = false; // ロック解除
   document.getElementById('mealStep1').style.display = 'block';
   document.getElementById('mealStep2').style.display = 'none';
   document.getElementById('mealAnalyzing').style.display = 'none';
@@ -2196,6 +2591,11 @@ function resetMealModal() {
   document.getElementById('mealImageInput').value = '';
   document.getElementById('mealNote1').value = '';
   window._mealImageBase64 = null;
+  // チップパネルを閉じてテンプレボタンを復元
+  const adjPanel = document.getElementById('breakfastAdjustPanel');
+  const tplBtn = document.getElementById('breakfastTemplateBtn');
+  if (adjPanel) adjPanel.style.display = 'none';
+  if (tplBtn) tplBtn.style.display = 'flex';
   // 保存ボタンもリセット
   const btn = document.querySelector('#mealStep2 .btn-primary');
   if (btn) { btn.disabled = false; btn.textContent = '保存'; }
@@ -2268,8 +2668,6 @@ async function doAnalyzeMeal(base64, note) {
         <div class="meal-result-item"><div class="meal-result-val">${r.carb}g</div><div class="meal-result-label">CARB</div></div>
       `;
       document.getElementById('mealAiComment').textContent = r.comment ? `💬 ${r.comment}` : '';
-      // AIコメントをhiddenフィールドに保存して保存時に使う
-      document.getElementById('mealAiCommentHidden').value = r.comment || '';
       document.getElementById('mealFoodName').value = r.foodName || '';
       document.getElementById('mealKcal').value = r.kcal || '';
       document.getElementById('mealProtein').value = r.protein || '';
@@ -2335,7 +2733,6 @@ async function saveMealRecord() {
     fat: parseInt(document.getElementById('mealFat').value) || 0,
     carb: parseInt(document.getElementById('mealCarb').value) || 0,
     memo: document.getElementById('mealMemo').value,
-    aiComment: document.getElementById('mealAiCommentHidden').value || '',
   };
 
   try {
@@ -3108,29 +3505,27 @@ function buildMachineStats() {
   const stats = {};
   Object.entries(state.history).forEach(([date, entries]) => {
     entries.forEach(entry => {
+      if (entry.type !== 'strength') return;
       const name = entry.name;
       if (!stats[name]) {
         stats[name] = {
           name, area: entry.area, part: entry.part || '',
           daysUsed: 0, maxWeight: 0, maxReps: 0, bestSet: null,
-          prCount: 0, firstDate: date, lastDate: date, memos: [],
-          type: entry.type,
+          prCount: 0, firstDate: date, lastDate: date, memos: []
         };
       }
       const s = stats[name];
       s.daysUsed++;
       if (date > s.lastDate) s.lastDate = date;
       if (date < s.firstDate) s.firstDate = date;
-      if (entry.type === 'strength') {
-        (entry.sets || []).forEach(set => {
-          if (set.weight > s.maxWeight) s.maxWeight = set.weight;
-          if (set.reps > s.maxReps) s.maxReps = set.reps;
-          if (!s.bestSet || set.weight * set.reps > s.bestSet.weight * s.bestSet.reps) {
-            s.bestSet = { weight: set.weight, reps: set.reps };
-          }
-          if (set.isPR) s.prCount++;
-        });
-      }
+      (entry.sets || []).forEach(set => {
+        if (set.weight > s.maxWeight) s.maxWeight = set.weight;
+        if (set.reps > s.maxReps) s.maxReps = set.reps;
+        if (!s.bestSet || set.weight * set.reps > s.bestSet.weight * s.bestSet.reps) {
+          s.bestSet = { weight: set.weight, reps: set.reps };
+        }
+        if (set.isPR) s.prCount++;
+      });
       if (entry.memo) s.memos.push({ date, text: entry.memo });
     });
   });
@@ -3138,11 +3533,10 @@ function buildMachineStats() {
 }
 
 function getRank(daysUsed) {
-  const n = Number(daysUsed) || 0;
-  if (n === 0) return { icon: '⬜', label: '未挑戦', level: 0 };
-  if (n < 5)   return { icon: '🥉', label: 'ブロンズ', level: 1, next: 5 };
-  if (n < 10)  return { icon: '🥈', label: 'シルバー', level: 2, next: 10 };
-  if (n < 20)  return { icon: '🥇', label: 'ゴールド', level: 3, next: 20 };
+  if (daysUsed === 0) return { icon: '⬜', label: '未挑戦', level: 0 };
+  if (daysUsed < 5)  return { icon: '🥉', label: 'ブロンズ', level: 1, next: 5 };
+  if (daysUsed < 10) return { icon: '🥈', label: 'シルバー', level: 2, next: 10 };
+  if (daysUsed < 20) return { icon: '🥇', label: 'ゴールド', level: 3, next: 20 };
   return { icon: '💎', label: 'ダイヤ', level: 4 };
 }
 
@@ -3151,53 +3545,34 @@ function renderComplete() {
   const machineStats = buildMachineStats();
 
   // machineMasterから全種目リストを構築（正のマスター）
-  const masterList = state.machineMaster.length > 0
-    ? state.machineMaster
-    : null;
-
-  // machineMasterがなければMACHINES定数にフォールバック
-  let allExercises = [];
+  const masterList = state.machineMaster.length > 0 ? state.machineMaster : null;
   let totalEx = 0;
+  const allExercises = [];
 
   if (masterList) {
     masterList.forEach(m => {
       totalEx++;
       const s = machineStats[m.machineName];
       allExercises.push({
-        name: m.machineName,
-        areaName: m.area,
-        part: m.part,
-        type: m.type,
-        isActive: m.isActive,
-        userNote: m.userNote,
-        defaultFlavor: m.defaultFlavor,
-        aiFlavorText: m.aiFlavorText,
-        aiGeneratedAt: m.aiGeneratedAt,
-        daysUsed: s?.daysUsed || 0,
-        maxWeight: s?.maxWeight || 0,
-        maxReps: s?.maxReps || 0,
-        bestSet: s?.bestSet || null,
-        prCount: s?.prCount || 0,
-        firstDate: s?.firstDate || null,
-        lastDate: s?.lastDate || null,
-        memos: s?.memos || [],
+        name: m.machineName, areaName: m.area, part: m.part,
+        type: m.type, isActive: m.isActive,
+        defaultFlavor: m.defaultFlavor, aiFlavorText: m.aiFlavorText,
+        aiGeneratedAt: m.aiGeneratedAt, aiNickname: m.aiNickname,
+        techniqueMemo: m.techniqueMemo, referenceUrl: m.referenceUrl,
+        referenceTitle: m.referenceTitle,
+        daysUsed: s?.daysUsed || 0, maxWeight: s?.maxWeight || 0,
+        maxReps: s?.maxReps || 0, bestSet: s?.bestSet || null,
+        prCount: s?.prCount || 0, firstDate: s?.firstDate || null,
+        lastDate: s?.lastDate || null, memos: s?.memos || [],
       });
     });
   } else {
-    // フォールバック
+    // フォールバック: MACHINES定数から
     for (const area of Object.values(MACHINES)) {
       for (const ex of area.exercises) {
         totalEx++;
-        const s = machineStats[ex.name];
-        allExercises.push({
-          name: ex.name, areaName: area.name, part: ex.part || area.name,
-          type: area.type || 'strength', isActive: true,
-          userNote: '', defaultFlavor: '', aiFlavorText: '', aiGeneratedAt: '',
-          daysUsed: s?.daysUsed || 0, maxWeight: s?.maxWeight || 0,
-          maxReps: s?.maxReps || 0, bestSet: s?.bestSet || null,
-          prCount: s?.prCount || 0, firstDate: s?.firstDate || null,
-          lastDate: s?.lastDate || null, memos: s?.memos || [],
-        });
+        const s = machineStats[ex.name] || { daysUsed: 0, maxWeight: 0, maxReps: 0, bestSet: null, prCount: 0, firstDate: null, lastDate: null, memos: [] };
+        allExercises.push({ ...s, name: ex.name, areaName: area.name, part: ex.part || '', type: area.type || 'strength' });
       }
     }
   }
@@ -3323,10 +3698,8 @@ function openPokedexModal(machineName) {
 
   const master = state.machineMaster.find(m => m.machineName === machineName) || {};
 
-  // ふたつ名 + ジムバトルログ（1行目がふたつ名、残りが本文）
-  const fullText = master.aiFlavorText || master.defaultFlavor || '';
+  const fullText = master.aiFlavorText || master.defaultFlavor || pokedex.flavorText || '';
   const textLines = fullText.split('\n').filter(Boolean);
-  const hasNickname = master.aiNickname;
   const nickname = master.aiNickname || '';
   const battleLog = textLines.length > 1 ? textLines.slice(1).join('\n') : (textLines[0] || '');
   const isAiGenerated = !!master.aiFlavorText;
@@ -3340,7 +3713,7 @@ function openPokedexModal(machineName) {
   const flavorHtml = battleLog ? `<div class="pokedex-flavor">
     📖 ${battleLog.replace(/\n/g,'<br>')}
     <div class="pokedex-flavor-date">${isAiGenerated ? '更新：' + master.aiGeneratedAt : '初期説明文'}</div>
-  </div>` : '';
+  </div>` : `<div class="pokedex-flavor" style="color:var(--text-dim)">📖 まだ図鑑説明文がありません。<br>記録を積み重ねると深夜に自動生成されます。</div>`;
 
   const techniqueMemoHtml = master.techniqueMemo ? `
     <div style="margin-bottom:12px">
@@ -3355,6 +3728,7 @@ function openPokedexModal(machineName) {
         ${master.referenceTitle || '参考リンク'} ↗
       </a>
     </div>` : '';
+
   modal.innerHTML = `
     <div class="pokedex-modal-box">
       <div class="pokedex-modal-rank">${rank.icon}</div>
@@ -3425,20 +3799,15 @@ async function saveMachineNotesFromModal(machineName) {
 
   try {
     await gasPost({ action: 'updateMachineNotes', machineName, techniqueMemo, referenceTitle, referenceUrl });
-
-    // stateのmachineMasterも更新
     const m = state.machineMaster.find(m => m.machineName === machineName);
     if (m) { m.techniqueMemo = techniqueMemo; m.referenceTitle = referenceTitle; m.referenceUrl = referenceUrl; }
-
     showToast('✅ 攻略メモを保存しました');
-    // モーダルを閉じて再表示
     document.querySelector('.pokedex-modal-overlay')?.remove();
     openPokedexModal(machineName);
   } catch(e) {
     showToast('保存失敗', true);
   }
 }
-
 // =============================================
 // UTILS
 // =============================================
