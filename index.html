@@ -1463,9 +1463,17 @@ async function gasPost(body) {
 // INIT - Load all data from GAS
 // =============================================
 async function init() {
+  let result = null;
+
   try {
-    const result = await gasGet({ action: 'getAll' });
-    if (result.status === 'ok') {
+    result = await gasGet({ action: 'getAll' });
+
+    console.log('[init] getAll result:', result);
+    console.log('[init] pokedexEntries:', result?.pokedexEntries);
+    console.log('[init] アブドミナル:', result?.pokedexEntries?.['アブドミナル']);
+    console.log('[init] ラットプルダウン:', result?.pokedexEntries?.['ラットプルダウン']);
+
+    if (result && result.status === 'ok') {
       state.history = result.data || {};
       state.menus = result.menus || {};
       state.trainerList = result.trainerList || [];
@@ -1476,22 +1484,40 @@ async function init() {
       state.dayLogs = result.dayLogs || {};
       state.bodyMetrics = result.bodyMetrics || {};
       state.pokedexEntries = result.pokedexEntries || {};
+
+      console.log('[init] state.pokedexEntries:', state.pokedexEntries);
+      console.log('[init] state アブドミナル:', state.pokedexEntries?.['アブドミナル']);
     } else {
-      showToast('データ読み込みエラー', true);
+      console.error('[init] getAll error result:', result);
+      showToast('データ読み込みエラー: ' + (result?.message || ''), true);
     }
-  } catch(e) {
-    showToast('通信エラー: オフラインの可能性があります', true);
+
+  } catch (e) {
+    console.error('[init] 通信/初期化エラー:', e);
+    showToast('通信エラー: ' + (e?.message || 'オフラインの可能性があります'), true);
+
+  } finally {
+    // 保存済みのトレーナー設定を復元
+    try {
+      state.trainerComplete = localStorage.getItem('fitlog_trainer_complete') || null;
+      state.trainerReview   = localStorage.getItem('fitlog_trainer_review') || null;
+      state.trainerMeal     = localStorage.getItem('fitlog_trainer_meal') || null;
+    } catch (e) {
+      console.warn('[init] localStorage restore failed:', e);
+    }
+
+    try {
+      updateHeaderDate();
+      updateRecDateBanner();
+      renderAreas();
+    } catch (e) {
+      console.error('[init] render error:', e);
+      showToast('画面描画エラー: ' + (e?.message || ''), true);
+    }
+
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) loadingOverlay.classList.add('hidden');
   }
-  document.getElementById('loadingOverlay').classList.add('hidden');
-  // 保存済みのトレーナー設定を復元
-  try {
-    state.trainerComplete = localStorage.getItem('fitlog_trainer_complete') || null;
-    state.trainerReview   = localStorage.getItem('fitlog_trainer_review') || null;
-    state.trainerMeal     = localStorage.getItem('fitlog_trainer_meal') || null;
-  } catch(e) {}
-  updateHeaderDate();
-  updateRecDateBanner();
-  renderAreas();
 }
 
 async function syncData() {
