@@ -3803,6 +3803,7 @@ function openPokedexModal(machineName) {
   const s = stats[machineName];
   const rank = getRank(s ? s.daysUsed : 0);
   const pokedex = state.pokedexEntries[machineName] || {};
+  const aiNickname = pokedex.aiNickname || master.aiNickname || '';
 
   const modal = document.createElement('div');
   modal.className = 'pokedex-modal-overlay';
@@ -3830,11 +3831,12 @@ function openPokedexModal(machineName) {
   const battleLog = textLines.length > 1 ? textLines.slice(1).join('\n') : (textLines[0] || '');
   const isAiGenerated = !!master.aiFlavorText;
 
-  const nicknameHtml = nickname ? `
-    <div style="text-align:center;margin-bottom:12px">
-      <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">🏷️ ふたつ名</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--accent)">${nickname}</div>
-    </div>` : '';
+  const nicknameHtml = aiNickname ? `
+  <div class="pokedex-nickname-card">
+    <div class="pokedex-nickname-label">二つ名</div>
+    <div class="pokedex-nickname-title">“${aiNickname}”</div>
+  </div>
+` : '';
 
   const flavorHtml = battleLog ? `<div class="pokedex-flavor">
     📖 ${battleLog.replace(/\n/g,'<br>')}
@@ -3854,7 +3856,7 @@ function openPokedexModal(machineName) {
         ${master.referenceTitle || '参考リンク'} ↗
       </a>
     </div>` : '';
-
+  
   modal.innerHTML = `
     <div class="pokedex-modal-box">
       <div class="pokedex-modal-rank">${rank.icon}</div>
