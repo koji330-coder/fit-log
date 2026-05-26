@@ -1910,8 +1910,8 @@ function renderToday() {
               <span>C:${m.carb}g</span>
             </div>
             ${m.memo ? `<div style="font-size:11px;color:var(--text-dim);margin-top:4px">📝 ${m.memo}</div>` : ''}
+            ${m.aiComment ? `<div style="font-size:11px;color:var(--accent2);margin-top:4px;line-height:1.5">💬 ${m.aiComment}</div>` : ''}
           </div>
-          <button class="meal-delete-btn" onclick="deleteMealRecord('${state.recordingDate}', '${m.time}')">🗑</button>
         </div>
       `;
     });
@@ -2286,6 +2286,7 @@ function renderCalendar() {
               </div>
             </div>
             ${m.memo ? `<div class="log-memo" style="margin-top:4px">📝 ${m.memo}</div>` : ''}
+            ${m.aiComment ? `<div style="font-size:11px;color:var(--accent2);margin-top:4px;line-height:1.5">💬 ${m.aiComment}</div>` : ''}
           </div>
         `;
       }
