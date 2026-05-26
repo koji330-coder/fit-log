@@ -1448,15 +1448,15 @@ function formatDate(str) {
 async function gasGet(params) {
   const url = GAS_URL + '?' + new URLSearchParams(params);
   const res = await fetch(url);
+  return res.json();
+}
 
-  const text = await res.text();
-  console.log('GAS GET status:', res.status, text.slice(0, 300));
-
-  if (!res.ok) {
-    throw new Error('GAS HTTP ' + res.status);
-  }
-
-  return JSON.parse(text);
+async function gasPost(body) {
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  return res.json();
 }
 
 // =============================================
@@ -1465,7 +1465,6 @@ async function gasGet(params) {
 async function init() {
   try {
     const result = await gasGet({ action: 'getAll' });
-
     if (result.status === 'ok') {
       state.history = result.data || {};
       state.menus = result.menus || {};
@@ -1478,27 +1477,21 @@ async function init() {
       state.bodyMetrics = result.bodyMetrics || {};
       state.pokedexEntries = result.pokedexEntries || {};
     } else {
-      console.error('GAS error:', result);
-      showToast('データ読み込みエラー: ' + (result.message || ''), true);
+      showToast('データ読み込みエラー', true);
     }
-
-    try {
-      state.trainerComplete = localStorage.getItem('fitlog_trainer_complete') || null;
-      state.trainerReview   = localStorage.getItem('fitlog_trainer_review') || null;
-      state.trainerMeal     = localStorage.getItem('fitlog_trainer_meal') || null;
-    } catch(e) {}
-
-    updateHeaderDate();
-    updateRecDateBanner();
-    renderAreas();
-
   } catch(e) {
-    console.error('init error:', e);
-    showToast('通信/初期化エラー: ' + e.message, true);
-  } finally {
-    const overlay = document.getElementById('loadingOverlay');
-    if (overlay) overlay.classList.add('hidden');
+    showToast('通信エラー: オフラインの可能性があります', true);
   }
+  document.getElementById('loadingOverlay').classList.add('hidden');
+  // 保存済みのトレーナー設定を復元
+  try {
+    state.trainerComplete = localStorage.getItem('fitlog_trainer_complete') || null;
+    state.trainerReview   = localStorage.getItem('fitlog_trainer_review') || null;
+    state.trainerMeal     = localStorage.getItem('fitlog_trainer_meal') || null;
+  } catch(e) {}
+  updateHeaderDate();
+  updateRecDateBanner();
+  renderAreas();
 }
 
 async function syncData() {
@@ -3858,7 +3851,6 @@ function openPokedexModal(machineName) {
               floors:     { val: s.maxFloors,     label: '最多フロア' },
               cardioKcal: { val: s.maxCardioKcal, label: '最大消費kcal' },
             };
-            // timeは必ず先頭、あとはCARDIO_METAのfields順で表示（time以外）
             const displayFields = ['time', ...meta.map(f => f.key).filter(k => k !== 'time')];
             return displayFields.map(key => {
               const stat = statMap[key];
@@ -3869,15 +3861,6 @@ function openPokedexModal(machineName) {
               </div>`;
             }).join('');
           })() : `
-          <div class="pokedex-stat-item">
-            <div class="pokedex-stat-val">${s.prCount}</div>
-            <div class="pokedex-stat-label">PR回数</div>
-          </div>
-          <div class="pokedex-stat-item">
-            <div class="pokedex-stat-val">${s.maxWeight}</div>
-            <div class="pokedex-stat-label">最高重量kg</div>
-          </div>
-          `} : `
           <div class="pokedex-stat-item">
             <div class="pokedex-stat-val">${s.prCount}</div>
             <div class="pokedex-stat-label">PR回数</div>
@@ -4896,14 +4879,7 @@ function soundSave() {
 // =============================================
 // START
 // =============================================
-window.addEventListener('DOMContentLoaded', () => {
-  init().catch(err => {
-    console.error('init failed:', err);
-    const overlay = document.getElementById('loadingOverlay');
-    if (overlay) overlay.classList.add('hidden');
-    alert('初期化エラー: ' + err.message);
-  });
-});
+init();
 </script>
 </body>
 </html>
