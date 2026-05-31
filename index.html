@@ -4188,13 +4188,11 @@ function setMetricsGraphPeriod(period) {
   metricsGraphPeriod = period;
   renderCalendar();
 }
-
 function renderBodyMetricsGraph() {
   const metrics = state.bodyMetrics || {};
   const allDates = Object.keys(metrics).sort();
-  if (allDates.length < 2) return ''; // データが2件未満は表示しない
+  if (allDates.length < 2) return '';
 
-  // 期間フィルタ
   const today = getTodayStr();
   let fromDate;
   if (metricsGraphPeriod === '7d') {
@@ -4204,152 +4202,176 @@ function renderBodyMetricsGraph() {
     const d = new Date(); d.setDate(d.getDate() - 29);
     fromDate = d.toISOString().slice(0,10);
   } else {
-    fromDate = allDates[0]; // 全期間
+    fromDate = allDates[0];
   }
 
   const filtered = allDates.filter(d => d >= fromDate && d <= today);
   if (filtered.length < 2) return '';
 
-  const weights = filtered.map(d => metrics[d].weight).filter(v => v > 0);
-  const fats = filtered.map(d => metrics[d].bodyfat).filter(v => v > 0);
-  if (weights.length < 2) return '';
+  // 3ライン用データ（体重・体脂肪・除脂肪体重）
+  // 体重と体脂肪が両方ある日だけ除脂肪体重を計算
+  const triDates = filtered.filter(d => metrics[d].weight > 0 && metrics[d].bodyfat > 0);
+  const wDates   = filtered.filter(d => metrics[d].weight > 0);
+  if (wDates.length < 2) return '';
 
-  // SVGグラフ描画
-  const W = 320, H = 120, PAD = { top: 10, right: 10, bottom: 24, left: 36 };
+  const weights = wDates.map(d => metrics[d].weight);
+  const fats    = triDates.map(d => metrics[d].bodyfat);
+  const lbms    = triDates.map(d => +(metrics[d].weight * (1 - metrics[d].bodyfat / 100)).toFixed(1));
+
+  // 差分計算
+  const firstW = weights[0], lastW = weights[weights.length - 1];
+  const wDiff = (lastW - firstW).toFixed(1);
+  const wDiffStr = wDiff > 0 ? `+${wDiff}` : `${wDiff}`;
+  const wDiffColor = wDiff <= 0 ? 'var(--success)' : 'var(--accent)';
+
+  let bfDiffHtml = '', lbmDiffHtml = '';
+  if (fats.length >= 2) {
+    const fd = (fats[fats.length-1] - fats[0]).toFixed(1);
+    const fdStr = fd > 0 ? `+${fd}` : `${fd}`;
+    bfDiffHtml = `<span style="color:${fd <= 0 ? 'var(--success)' : 'var(--accent)'};font-size:12px"> / ${fdStr}%</span>`;
+  }
+  if (lbms.length >= 2) {
+    const ld = (lbms[lbms.length-1] - lbms[0]).toFixed(1);
+    const ldStr = ld >= 0 ? `+${ld}` : `${ld}`;
+    lbmDiffHtml = `<span style="color:${ld >= 0 ? 'var(--success)' : 'var(--accent)'};font-size:12px"> / 除脂肪${ldStr}kg</span>`;
+  }
+
+  // SVG設定（左軸: 体重・除脂肪体重、右軸: 体脂肪率）
+  const W = 320, H = 140;
+  const PAD = { top: 12, right: 32, bottom: 24, left: 36 };
   const gW = W - PAD.left - PAD.right;
   const gH = H - PAD.top - PAD.bottom;
 
-  // 体重グラフ
-  const wMin = Math.min(...weights) - 1;
-  const wMax = Math.max(...weights) + 1;
-  const wDates = filtered.filter(d => metrics[d].weight > 0);
+  // 左軸スケール（体重と除脂肪体重を同スケール）
+  const allLeftVals = [...weights, ...lbms];
+  const yMin = Math.min(...allLeftVals) - 1;
+  const yMax = Math.max(...allLeftVals) + 1;
 
-  function xPos(i, total) { return PAD.left + (i / Math.max(total-1,1)) * gW; }
-  function yPosW(v) { return PAD.top + gH - ((v - wMin) / (wMax - wMin)) * gH; }
+  // 右軸スケール（体脂肪率）
+  const bfMin = fats.length > 0 ? Math.min(...fats) - 1 : 0;
+  const bfMax = fats.length > 0 ? Math.max(...fats) + 1 : 30;
 
-  let wPath = '';
-  let wDots = '';
+  function xPos(i, total) { return PAD.left + (i / Math.max(total - 1, 1)) * gW; }
+  function yPosL(v) { return PAD.top + gH - ((v - yMin) / (yMax - yMin)) * gH; }
+  function yPosR(v) { return PAD.top + gH - ((v - bfMin) / (bfMax - bfMin)) * gH; }
+
+  // 体重ライン
+  let wPath = '', wDots = '';
   wDates.forEach((d, i) => {
     const x = xPos(i, wDates.length);
-    const y = yPosW(metrics[d].weight);
+    const y = yPosL(metrics[d].weight);
     wPath += i === 0 ? `M${x},${y}` : `L${x},${y}`;
-    wDots += `<circle cx="${x}" cy="${y}" r="3" fill="#ff3d6b"/>`;
+    if (wDates.length <= 30) wDots += `<circle cx="${x}" cy="${y}" r="2.5" fill="#ff3d6b"/>`;
   });
 
-  // 体脂肪率グラフ（右軸）
-  const fDates = filtered.filter(d => metrics[d].bodyfat > 0);
-  let fPath = '';
-  let fDots = '';
-  if (fDates.length >= 2) {
-    const fMin = Math.min(...fats) - 1;
-    const fMax = Math.max(...fats) + 1;
-    function yPosF(v) { return PAD.top + gH - ((v - fMin) / (fMax - fMin)) * gH; }
-    fDates.forEach((d, i) => {
-      const x = xPos(i, fDates.length);
-      const y = yPosF(metrics[d].bodyfat);
-      fPath += i === 0 ? `M${x},${y}` : `L${x},${y}`;
-      fDots += `<circle cx="${x}" cy="${y}" r="3" fill="#ff8c42"/>`;
-    });
-  }
+  // 除脂肪体重ライン
+  let lPath = '', lDots = '';
+  triDates.forEach((d, i) => {
+    const x = xPos(i, triDates.length);
+    const lbm = metrics[d].weight * (1 - metrics[d].bodyfat / 100);
+    const y = yPosL(lbm);
+    lPath += i === 0 ? `M${x},${y}` : `L${x},${y}`;
+    if (triDates.length <= 30) lDots += `<circle cx="${x}" cy="${y}" r="2.5" fill="#06d6a0"/>`;
+  });
 
-  // X軸ラベル（最大5個）
+  // 体脂肪率ライン（破線）
+  let fPath = '', fDots = '';
+  triDates.forEach((d, i) => {
+    const x = xPos(i, triDates.length);
+    const y = yPosR(metrics[d].bodyfat);
+    fPath += i === 0 ? `M${x},${y}` : `L${x},${y}`;
+    if (triDates.length <= 30) fDots += `<circle cx="${x}" cy="${y}" r="2.5" fill="#ff8c42"/>`;
+  });
+
+  // X軸ラベル
   const labelStep = Math.max(1, Math.floor(wDates.length / 4));
   let xLabels = '';
   wDates.forEach((d, i) => {
     if (i % labelStep === 0 || i === wDates.length - 1) {
       const x = xPos(i, wDates.length);
-      const label = `${parseInt(d.slice(5,7))}/${parseInt(d.slice(8,10))}`;
-      xLabels += `<text x="${x}" y="${H - 4}" text-anchor="middle" font-size="9" fill="#666">${label}</text>`;
+      xLabels += `<text x="${x}" y="${H - 4}" text-anchor="middle" font-size="9" fill="#666">${parseInt(d.slice(5,7))}/${parseInt(d.slice(8,10))}</text>`;
     }
   });
 
-  // Y軸ラベル
+  // Y軸ラベル（左）
   const yLabels = `
-    <text x="${PAD.left - 4}" y="${PAD.top + 4}" text-anchor="end" font-size="9" fill="#ff3d6b">${wMax.toFixed(1)}</text>
-    <text x="${PAD.left - 4}" y="${PAD.top + gH + 4}" text-anchor="end" font-size="9" fill="#ff3d6b">${wMin.toFixed(1)}</text>
+    <text x="${PAD.left - 4}" y="${PAD.top + 4}" text-anchor="end" font-size="9" fill="#ff3d6b">${yMax.toFixed(1)}</text>
+    <text x="${PAD.left - 4}" y="${PAD.top + gH + 4}" text-anchor="end" font-size="9" fill="#ff3d6b">${yMin.toFixed(1)}</text>
   `;
 
-  const latestWeight = weights[weights.length - 1];
-  const firstWeight = weights[0];
-  const diff = (latestWeight - firstWeight).toFixed(1);
-  const diffStr = diff > 0 ? `+${diff}` : `${diff}`;
-  const diffColor = diff <= 0 ? 'var(--success)' : 'var(--accent)';
-
-  // 体脂肪グラフ（独立）
-  let fatGraphHtml = '';
-  if (fDates.length >= 2) {
-    const fMin2 = Math.min(...fats) - 0.5;
-    const fMax2 = Math.max(...fats) + 0.5;
-    function yPosF2(v) { return PAD.top + gH - ((v - fMin2) / (fMax2 - fMin2)) * gH; }
-    let fPath2 = '';
-    let fDots2 = '';
-    fDates.forEach((d, i) => {
-      const x = xPos(i, fDates.length);
-      const y = yPosF2(metrics[d].bodyfat);
-      fPath2 += i === 0 ? `M${x},${y}` : `L${x},${y}`;
-      fDots2 += `<circle cx="${x}" cy="${y}" r="3" fill="#ff8c42"/>`;
-    });
-    let fXLabels = '';
-    const fLabelStep = Math.max(1, Math.floor(fDates.length / 4));
-    fDates.forEach((d, i) => {
-      if (i % fLabelStep === 0 || i === fDates.length - 1) {
-        const x = xPos(i, fDates.length);
-        const label = `${parseInt(d.slice(5,7))}/${parseInt(d.slice(8,10))}`;
-        fXLabels += `<text x="${x}" y="${H - 4}" text-anchor="middle" font-size="9" fill="#666">${label}</text>`;
-      }
-    });
-    const latestFat = fats[fats.length - 1];
-    const firstFat = fats[0];
-    const fatDiff = (latestFat - firstFat).toFixed(1);
-    const fatDiffStr = fatDiff > 0 ? `+${fatDiff}` : `${fatDiff}`;
-    const fatDiffColor = fatDiff <= 0 ? 'var(--success)' : 'var(--accent)';
-
-    fatGraphHtml = `
-      <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
-        <div style="font-size:11px;font-weight:900;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">
-          🔥 体脂肪率推移 <span style="color:${fatDiffColor};font-size:12px">${fatDiffStr}%</span>
-        </div>
-        <svg width="${W}" height="${H}" style="width:100%;height:auto">
-          <line x1="${PAD.left}" y1="${PAD.top}" x2="${PAD.left}" y2="${PAD.top+gH}" stroke="#333" stroke-width="1"/>
-          <line x1="${PAD.left}" y1="${PAD.top+gH}" x2="${PAD.left+gW}" y2="${PAD.top+gH}" stroke="#333" stroke-width="1"/>
-          <text x="${PAD.left - 4}" y="${PAD.top + 4}" text-anchor="end" font-size="9" fill="#ff8c42">${fMax2.toFixed(1)}</text>
-          <text x="${PAD.left - 4}" y="${PAD.top + gH + 4}" text-anchor="end" font-size="9" fill="#ff8c42">${fMin2.toFixed(1)}</text>
-          ${fXLabels}
-          <path d="${fPath2}" fill="none" stroke="#ff8c42" stroke-width="2"/>
-          ${fDots2}
-        </svg>
-      </div>
-    `;
-  }
+  // Y軸ラベル（右・体脂肪率）
+  const yLabelsR = fats.length >= 2 ? `
+    <text x="${W - PAD.right + 4}" y="${PAD.top + 4}" text-anchor="start" font-size="9" fill="#ff8c42">${bfMax.toFixed(1)}%</text>
+    <text x="${W - PAD.right + 4}" y="${PAD.top + gH + 4}" text-anchor="start" font-size="9" fill="#ff8c42">${bfMin.toFixed(1)}%</text>
+  ` : '';
 
   const periodBtns = ['7d','30d','all'].map(p =>
     `<button class="metrics-period-btn ${metricsGraphPeriod === p ? 'active' : ''}" onclick="setMetricsGraphPeriod('${p}')">${p === '7d' ? '7日' : p === '30d' ? '30日' : '全期間'}</button>`
   ).join('');
 
+  // メトリクスカード（3つ）
+  const latestLbm = lbms.length > 0 ? lbms[lbms.length-1] : null;
+  const firstLbm  = lbms.length > 0 ? lbms[0] : null;
+  const lbmCard = latestLbm !== null ? `
+    <div style="flex:1;background:rgba(6,214,160,0.08);border:1px solid rgba(6,214,160,0.2);border-radius:8px;padding:8px 10px;text-align:center">
+      <div style="font-size:10px;color:var(--text-dim);font-weight:700;margin-bottom:2px">除脂肪体重</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--success)">${latestLbm}</div>
+      <div style="font-size:10px;color:${(latestLbm-firstLbm)>=0?'var(--success)':'var(--accent)'}">
+        ${(latestLbm-firstLbm)>=0?'+':''}${(latestLbm-firstLbm).toFixed(1)}kg
+      </div>
+    </div>` : '';
+
+  const latestBf = fats.length > 0 ? fats[fats.length-1] : null;
+  const bfCard = latestBf !== null ? `
+    <div style="flex:1;background:rgba(255,140,66,0.08);border:1px solid rgba(255,140,66,0.2);border-radius:8px;padding:8px 10px;text-align:center">
+      <div style="font-size:10px;color:var(--text-dim);font-weight:700;margin-bottom:2px">体脂肪率</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--accent2)">${latestBf.toFixed(1)}</div>
+      <div style="font-size:10px;color:${(latestBf-fats[0])<=0?'var(--success)':'var(--accent)'}">
+        ${(latestBf-fats[0])>0?'+':''}${(latestBf-fats[0]).toFixed(1)}%
+      </div>
+    </div>` : '';
+
   return `
     <div class="metrics-graph-wrap">
       <div class="metrics-graph-title">
-        <span>⚖️ 体重・体脂肪推移
-          <span style="color:${diffColor};font-size:12px">${diffStr}kg</span>
-          ${fDates.length >= 2 ? `<span style="color:${(() => { const fd = (fats[fats.length-1] - fats[0]).toFixed(1); return fd <= 0 ? 'var(--success)' : 'var(--accent)'; })()};font-size:12px"> / ${(() => { const fd = (fats[fats.length-1] - fats[0]).toFixed(1); return fd > 0 ? '+'+fd : fd; })()}%</span>` : ''}
+        <span>⚖️ 体重・除脂肪体重・体脂肪率
+          <span style="color:${wDiffColor};font-size:12px">${wDiffStr}kg</span>
+          ${bfDiffHtml}${lbmDiffHtml}
         </span>
         <div class="metrics-period-btns">${periodBtns}</div>
       </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <div style="flex:1;background:rgba(255,61,107,0.08);border:1px solid rgba(255,61,107,0.2);border-radius:8px;padding:8px 10px;text-align:center">
+          <div style="font-size:10px;color:var(--text-dim);font-weight:700;margin-bottom:2px">体重</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--accent)">${lastW.toFixed(1)}</div>
+          <div style="font-size:10px;color:${wDiffColor}">${wDiffStr}kg</div>
+        </div>
+        ${bfCard}
+        ${lbmCard}
+      </div>
+
       <div class="metrics-svg-wrap">
         <svg width="${W}" height="${H}" style="width:100%;height:auto">
           <line x1="${PAD.left}" y1="${PAD.top}" x2="${PAD.left}" y2="${PAD.top+gH}" stroke="#333" stroke-width="1"/>
           <line x1="${PAD.left}" y1="${PAD.top+gH}" x2="${PAD.left+gW}" y2="${PAD.top+gH}" stroke="#333" stroke-width="1"/>
-          ${yLabels}
+          ${yLabels}${yLabelsR}
           ${xLabels}
           <path d="${wPath}" fill="none" stroke="#ff3d6b" stroke-width="2"/>
           ${wDots}
+          <path d="${lPath}" fill="none" stroke="#06d6a0" stroke-width="2"/>
+          ${lDots}
+          <path d="${fPath}" fill="none" stroke="#ff8c42" stroke-width="2" stroke-dasharray="4,3"/>
+          ${fDots}
         </svg>
       </div>
+
       <div class="metrics-legend">
         <div class="metrics-legend-item"><div class="metrics-legend-dot" style="background:#ff3d6b"></div>体重</div>
+        <div class="metrics-legend-item"><div class="metrics-legend-dot" style="background:#06d6a0"></div>除脂肪体重</div>
+        <div class="metrics-legend-item"><div class="metrics-legend-dot" style="background:#ff8c42"></div>体脂肪率（右軸）</div>
         <div style="margin-left:auto;font-size:11px;color:var(--text-dim)">${filtered[0].slice(5).replace('-','/')} 〜 ${today.slice(5).replace('-','/')}</div>
       </div>
-      ${fatGraphHtml}
     </div>
   `;
 }
