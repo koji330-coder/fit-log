@@ -2513,17 +2513,17 @@ async function saveBreakfastTemplate() {
     carb:    base.carb    + rd.carb    + md.carb,
     memo,
   };
+  closeMealModal();
+  showToast('⏳ 記録中...');
   try {
     const result = await gasPost({ action: 'saveMeal', meal });
     if (result.status !== 'ok') throw new Error(result.message || '保存失敗');
     if (!state.meals[meal.date]) state.meals[meal.date] = [];
     state.meals[meal.date].push(meal);
     showToast('🌅 朝食を記録しました！');
-    closeMealModal();
     renderToday();
   } catch(e) {
-    showToast('保存失敗', true);
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'この内容で記録'; }
+    showToast('保存失敗。もう一度お試しください', true);
   } finally {
     isSavingMealTemplate = false;
   }
@@ -2534,24 +2534,22 @@ async function applyMealTemplate(templateId) {
   isSavingMealTemplate = true;
   const t = MEAL_TEMPLATES[templateId];
   if (!t) { isSavingMealTemplate = false; return; }
-  const btns = document.querySelectorAll('.meal-template-btn');
-  btns.forEach(b => { b.disabled = true; b.style.opacity = '0.5'; });
   const meal = {
     date: state.recordingDate, time: getCurrentTimeStr(),
     mealType: t.mealType, foodName: t.foodName,
     kcal: t.kcal, protein: t.protein, fat: t.fat, carb: t.carb, memo: '',
   };
+  closeMealModal();
+  showToast('⏳ 記録中...');
   try {
     const result = await gasPost({ action: 'saveMeal', meal });
     if (result.status !== 'ok') throw new Error(result.message || '保存失敗');
     if (!state.meals[meal.date]) state.meals[meal.date] = [];
     state.meals[meal.date].push(meal);
     showToast(`🍽️ ${t.name}を記録しました！`);
-    closeMealModal();
     renderToday();
   } catch(e) {
-    showToast('保存失敗', true);
-    btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+    showToast('保存失敗。もう一度お試しください', true);
   } finally {
     isSavingMealTemplate = false;
   }
@@ -3322,6 +3320,8 @@ ${dayLogContext ? '【その日のコンテキスト】\n' + dayLogContext : ''}
     if (!state.dayLogs[date]) state.dayLogs[date] = {};
     state.dayLogs[date].aiComment = text;
     try { await gasPost({ action: 'saveDayLogAiComment', date, comment: text }); } catch(e) {}
+
+    renderCalendar();
 
     document.getElementById('calReviewResult').innerHTML = `
       <div class="ai-praise-card" style="margin-bottom:12px">
