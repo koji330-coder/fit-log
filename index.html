@@ -1595,7 +1595,10 @@ function showScreen(name) {
   if (name === 'menu') renderMenu();
   if (name === 'today') renderToday();
   if (name === 'history') renderHistory();
-  if (name === 'calendar') renderCalendar();
+  if (name === 'calendar') {
+  if (!calState.selectedDate) calState.selectedDate = getTodayStr();
+      renderCalendar();
+    }
   if (name === 'complete') renderComplete();
   if (name === 'settings') renderSettings();
   if (name === 'body') {
