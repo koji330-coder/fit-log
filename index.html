@@ -3845,6 +3845,17 @@ function openPokedexModal(machineName) {
   const master = (state.machineMaster || []).find(m => m.machineName === machineName) || {};
   const pokedex = state.pokedexEntries[machineName] || {};
 
+  const fullText = master.aiFlavorText || master.defaultFlavor || pokedex.flavorText || '';
+  const textLines = fullText.split('\n').filter(Boolean);
+  const nickname = master.aiNickname || '';
+  const battleLog = textLines.length > 1 ? textLines.slice(1).join('\n') : (textLines[0] || '');
+  const isAiGenerated = !!master.aiFlavorText;
+  
+  const nicknameHtml = nickname ? `
+    <div style="text-align:center;margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">🏷️ ふたつ名</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--accent)">${nickname}</div>
+    </div>` : '';
 
   const flavorHtml = battleLog ? `<div class="pokedex-flavor">
     📖 ${battleLog.replace(/\n/g,'<br>')}
