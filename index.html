@@ -3840,8 +3840,8 @@ function openPokedexModal(machineName) {
   const stats = buildMachineStats();
   const s = stats[machineName];
   const modal = document.createElement('div');
-    modal.className = 'pokedex-modal-overlay';
-    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+  modal.className = 'pokedex-modal-overlay';
+  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
   const unlocked = isMachineUnlocked(s);
 
   const rank = getRank(s ? s.daysUsed : 0);
@@ -3861,22 +3861,29 @@ function openPokedexModal(machineName) {
   const master = (state.machineMaster || []).find(m => m.machineName === machineName) || {};
   const pokedex = state.pokedexEntries[machineName] || {};
 
-  const fullText = master.aiFlavorText || master.defaultFlavor || pokedex.flavorText || '';
+  // 未経験なら二つ名・図鑑テキストを隠す
+  const nickname = unlocked ? (master.aiNickname || '') : '';
+  const fullText = unlocked
+    ? (master.aiFlavorText || master.defaultFlavor || pokedex.flavorText || '')
+    : '';
   const textLines = fullText.split('\n').filter(Boolean);
-  const nickname = master.aiNickname || '';
   const battleLog = textLines.length > 1 ? textLines.slice(1).join('\n') : (textLines[0] || '');
   const isAiGenerated = !!master.aiFlavorText;
-  
+
   const nicknameHtml = nickname ? `
     <div style="text-align:center;margin-bottom:12px">
       <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">🏷️ ふたつ名</div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--accent)">${nickname}</div>
     </div>` : '';
 
-  const flavorHtml = battleLog ? `<div class="pokedex-flavor">
-    📖 ${battleLog.replace(/\n/g,'<br>')}
-    <div class="pokedex-flavor-date">${isAiGenerated ? '更新：' + master.aiGeneratedAt : '初期説明文'}</div>
-  </div>` : `<div class="pokedex-flavor" style="color:var(--text-dim)">📖 まだ図鑑説明文がありません。<br>記録を積み重ねると深夜に自動生成されます。</div>`;
+  const flavorHtml = battleLog
+    ? `<div class="pokedex-flavor">
+        📖 ${battleLog.replace(/\n/g,'<br>')}
+        <div class="pokedex-flavor-date">${isAiGenerated ? '更新：' + master.aiGeneratedAt : '初期説明文'}</div>
+      </div>`
+    : unlocked
+      ? `<div class="pokedex-flavor" style="color:var(--text-dim)">📖 まだ図鑑説明文がありません。<br>記録を積み重ねると深夜に自動生成されます。</div>`
+      : `<div class="pokedex-flavor" style="color:var(--text-dim)">🔒 初挑戦すると図鑑説明文が解放されます。</div>`;
 
   const techniqueMemoHtml = master.techniqueMemo ? `
     <div style="margin-bottom:12px">
@@ -3885,16 +3892,23 @@ function openPokedexModal(machineName) {
     </div>` : '';
 
   const referenceHtml = master.referenceUrl ? `
-    <div style="margin-bottom:12px">
-      <div style="font-size:11px;font-weight:900;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">🎥 参考</div>
-      <a href="${master.referenceUrl}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none">
-        ${master.referenceTitle || '参考リンク'} ↗
-      </a>
-    </div>` : '';
-  
+  <a href="${master.referenceUrl}" target="_blank" style="
+    display:flex; align-items:center; gap:10px;
+    background:rgba(255,0,0,0.1); border:1.5px solid rgba(255,0,0,0.3);
+    border-radius:10px; padding:12px 14px; margin-bottom:12px;
+    text-decoration:none; color:var(--text);
+  ">
+    <div style="font-size:24px;flex-shrink:0">▶️</div>
+    <div>
+      <div style="font-size:10px;font-weight:900;letter-spacing:1px;color:#ff4444;margin-bottom:2px">YouTube で見る</div>
+      <div style="font-size:13px;font-weight:700">${master.referenceTitle || '参考動画'}</div>
+    </div>
+    <div style="margin-left:auto;font-size:18px;flex-shrink:0">↗</div>
+  </a>` : '';
+
   modal.innerHTML = `
     <div class="pokedex-modal-box">
-      <div class="pokedex-modal-rank">${rank.icon}</div>
+      <div class="pokedex-modal-rank">${unlocked ? rank.icon : '⬜'}</div>
       <div class="pokedex-modal-name">${machineName}</div>
       <div class="pokedex-modal-part">${master.part || s?.part || ''} · ${rank.label}</div>
       ${nicknameHtml}
@@ -3905,7 +3919,6 @@ function openPokedexModal(machineName) {
             <div class="pokedex-stat-label">挑戦日数</div>
           </div>
           ${s.type === 'cardio' ? (() => {
-            // CARDIO_METAのfields定義から表示項目を動的生成
             const meta = CARDIO_META[machineName] || CARDIO_META['_default'];
             const statMap = {
               time:       { val: s.maxTime,       label: '最長時間(分)' },
