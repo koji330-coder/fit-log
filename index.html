@@ -4286,9 +4286,15 @@ function renderBodyMetricsGraph() {
   // X軸ラベル
   const labelStep = Math.max(1, Math.floor(wDates.length / 4));
   let xLabels = '';
+  let lastLabelX = -999;
   wDates.forEach((d, i) => {
-    if (i % labelStep === 0 || i === wDates.length - 1) {
+    const isFirst = i === 0;
+    const isLast = i === wDates.length - 1;
+    if (isFirst || isLast || i % labelStep === 0) {
       const x = xPos(i, wDates.length);
+      // 直前のラベルと近すぎる（20px以内）場合はスキップ
+      if (x - lastLabelX < 20) return;
+      lastLabelX = x;
       xLabels += `<text x="${x}" y="${H - 4}" text-anchor="middle" font-size="9" fill="#666">${parseInt(d.slice(5,7))}/${parseInt(d.slice(8,10))}</text>`;
     }
   });
