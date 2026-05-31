@@ -3839,8 +3839,24 @@ function escapeHtml(str) {
 function openPokedexModal(machineName) {
   const stats = buildMachineStats();
   const s = stats[machineName];
-
+  const modal = document.createElement('div');
+    modal.className = 'pokedex-modal-overlay';
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
   const unlocked = isMachineUnlocked(s);
+
+  const rank = getRank(s ? s.daysUsed : 0);
+  const nextRankInfo = rank.next
+    ? `<div class="pokedex-nextrank">あと${rank.next - (s?.daysUsed||0)}回で${getRank(rank.next).icon} ${getRank(rank.next).label}</div>`
+    : '';
+  const memoHtml = s?.memos?.length > 0
+    ? `<div style="font-size:11px;font-weight:900;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">📝 あなたのメモ</div>
+       <div class="pokedex-memos">${s.memos.slice().reverse().map(m => `
+         <div class="pokedex-memo-item">
+           <div class="pokedex-memo-date">${formatDate(m.date)}</div>
+           <div>${m.text}</div>
+         </div>`).join('')}
+       </div>`
+    : `<div style="font-size:12px;color:var(--text-dim)">まだメモがありません。</div>`;
 
   const master = (state.machineMaster || []).find(m => m.machineName === machineName) || {};
   const pokedex = state.pokedexEntries[machineName] || {};
